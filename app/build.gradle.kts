@@ -14,12 +14,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.bestbikeday"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.bestbikeday"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -36,7 +36,7 @@ android {
             buildConfigField(
                 "String",
                 "OPENWEATHER_API_KEY",
-                keystoreProperties["OPENWEATHER_API_KEY_DEBUG"]?.toString()
+                keystoreProperties["OPENWEATHER_API_KEY_DEBUG"]?.toString()?.let { "\"$it\"" }
                     ?: "\"default_debug_key\""
             )
             isMinifyEnabled = false
@@ -45,7 +45,7 @@ android {
             buildConfigField(
                 "String",
                 "OPENWEATHER_API_KEY",
-                keystoreProperties["OPENWEATHER_API_KEY_RELEASE"]?.toString()
+                keystoreProperties["OPENWEATHER_API_KEY_RELEASE"]?.toString()?.let { "\"$it\"" }
                     ?: "\"default_release_key\""
             )
             isMinifyEnabled = true

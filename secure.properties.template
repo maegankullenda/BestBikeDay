@@ -1,0 +1,4 @@
+# OpenWeatherMap API Keys
+# Copy this file to secure.properties and replace with your actual API keys
+OPENWEATHER_API_KEY_DEBUG=your_debug_api_key_here
+OPENWEATHER_API_KEY_RELEASE=your_production_api_key_here 

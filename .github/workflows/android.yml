@@ -150,10 +150,14 @@ jobs:
             adb shell settings put global animator_duration_scale 0.0
             adb logcat -c
             adb logcat > emulator.log &
+            # Run tests and store the exit code
             ./gradlew clean testDebugUnitTest connectedDebugAndroidTest jacocoTestReport --stacktrace
-            # Gracefully stop ADB and ignore any errors
-            adb kill-server || true
-            pkill -f adb || true
+            TEST_EXIT_CODE=$?
+            # Cleanup ADB and emulator
+            adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done || true
+            sleep 5
+            # Return the test exit code
+            exit $TEST_EXIT_CODE
 
       - name: Upload Emulator Log
         if: always()

@@ -17,6 +17,7 @@ permissions:
 env:
   JAVA_VERSION: "17"
   JAVA_DISTRIBUTION: "temurin"
+  API_LEVEL: "29"
 
 jobs:
   validate:
@@ -93,9 +94,8 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: gradle
 
-      - name: Enable KVM group access
-        run: |
-          echo "Hardware acceleration not needed on macOS"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Create keystore.properties
         env:
@@ -104,10 +104,19 @@ jobs:
           echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
           echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
 
+      - name: List available emulator images
+        run: |
+          sdkmanager --list | grep system-images
+
+      - name: Install Emulator
+        run: |
+          sdkmanager "system-images;android-${{ env.API_LEVEL }};google_apis;x86"
+          echo "no" | avdmanager create avd -n test_device -k "system-images;android-${{ env.API_LEVEL }};google_apis;x86" --force
+
       - name: Run Instrumented Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: ${{ env.API_LEVEL }}
           target: google_apis
           arch: x86
           profile: pixel_2
@@ -115,10 +124,17 @@ jobs:
           ram-size: 4096M
           heap-size: 2048M
           disk-size: 4096M
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: |
+            adb devices
+            adb wait-for-device
+            adb shell settings put global window_animation_scale 0.0
+            adb shell settings put global transition_animation_scale 0.0
+            adb shell settings put global animator_duration_scale 0.0
             adb logcat -c
             adb logcat > emulator.log &
-            ./gradlew connectedAndroidTest --stacktrace
+            ./gradlew connectedAndroidTest --info
             pkill -f adb
 
       - name: Upload Emulator Log
@@ -126,7 +142,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: emulator-log
-          path: emulator.log
+          path: |
+            emulator.log
+            ~/Library/Logs/androidstudio*
           retention-days: 5
 
       - name: Upload Instrumented Test Results
@@ -137,6 +155,7 @@ jobs:
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
+            app/build/outputs/logs/
           retention-days: 5
 
   build-debug:

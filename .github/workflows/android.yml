@@ -150,7 +150,7 @@ jobs:
             adb shell settings put global animator_duration_scale 0.0
             adb logcat -c
             adb logcat > emulator.log &
-            ./gradlew connectedAndroidTest --info
+            ./gradlew cleanTest createDebugAndroidTestCoverageReport connectedDebugAndroidTest -x lint --stacktrace
             pkill -f adb
 
       - name: Upload Emulator Log

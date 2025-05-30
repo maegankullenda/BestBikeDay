@@ -65,7 +65,7 @@ class WeatherScreenTest {
                 loadWeatherForecast(
                     lat = any(),
                     lon = any(),
-                    numberOfDays = any()
+                    apiKey = any()
                 )
             } returns Unit
         }
@@ -107,7 +107,7 @@ class WeatherScreenTest {
             viewModel.loadWeatherForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
-                numberOfDays = 5
+                apiKey = any()
             )
         }
     }
@@ -146,7 +146,7 @@ class WeatherScreenTest {
             viewModel.loadWeatherForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
-                numberOfDays = 5
+                apiKey = any()
             )
         }
     }
@@ -167,7 +167,7 @@ class WeatherScreenTest {
             viewModel.loadWeatherForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
-                numberOfDays = 5
+                apiKey = any()
             )
         }
     }

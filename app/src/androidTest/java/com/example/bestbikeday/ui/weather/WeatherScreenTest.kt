@@ -4,6 +4,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelStore
@@ -12,24 +13,26 @@ import com.example.bestbikeday.data.City
 import com.example.bestbikeday.data.ForecastItem
 import com.example.bestbikeday.data.MainWeather
 import com.example.bestbikeday.data.Weather
+import com.example.bestbikeday.data.WeatherApi
 import com.example.bestbikeday.data.Wind
 import com.example.bestbikeday.ui.theme.BestBikeDayTheme
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.spyk
-import io.mockk.verify
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class WeatherScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
     private lateinit var viewModel: WeatherViewModel
-    private lateinit var uiState: MutableStateFlow<WeatherUiState>
+    private lateinit var weatherApi: WeatherApi
     private lateinit var viewModelStoreOwner: androidx.lifecycle.ViewModelStoreOwner
 
     private val mockCity = City(
@@ -58,19 +61,10 @@ class WeatherScreenTest {
 
     @Before
     fun setup() {
-        uiState = spyk(MutableStateFlow(WeatherUiState()))
-        viewModel = mockk<WeatherViewModel>(relaxed = true).apply {
-            every { uiState } returns uiState
-            coEvery {
-                loadWeatherForecast(
-                    lat = any(),
-                    lon = any(),
-                    apiKey = any()
-                )
-            } returns Unit
-        }
+        weatherApi = mockk<WeatherApi>()
+        viewModel = WeatherViewModel(weatherApi)
 
-        viewModelStoreOwner = mockk<androidx.lifecycle.ViewModelStoreOwner>(relaxed = true).apply {
+        viewModelStoreOwner = mockk<androidx.lifecycle.ViewModelStoreOwner>().apply {
             every { viewModelStore } returns ViewModelStore()
         }
     }
@@ -94,20 +88,31 @@ class WeatherScreenTest {
     }
 
     @Test
-    fun weatherScreen_displaysLoadingState() {
-        uiState.value = WeatherUiState(isLoading = true)
+    fun weatherScreen_displaysLoadingState() = runTest {
+        coEvery {
+            weatherApi.getWeatherForecast(
+                lat = any(),
+                lon = any(),
+                apiKey = any(),
+                units = any()
+            )
+        } coAnswers {
+            kotlinx.coroutines.delay(100)
+            throw Exception("Simulated delay")
+        }
+
         launchWeatherScreen()
         composeTestRule.waitForIdle()
 
         composeTestRule
             .onNodeWithText("Weather Forecast")
             .assertIsDisplayed()
-        verify(atLeast = 1) { viewModel.uiState }
-        verify(atLeast = 1) {
-            viewModel.loadWeatherForecast(
+        coVerify(atLeast = 1) {
+            weatherApi.getWeatherForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
-                apiKey = any()
+                apiKey = any(),
+                units = any()
             )
         }
     }
@@ -123,15 +128,27 @@ class WeatherScreenTest {
             .performClick()
 
         assert(backClicked) { "Back button click was not registered" }
-        verify(atLeast = 1) { viewModel.uiState }
     }
 
     @Test
-    fun weatherScreen_DisplaysWeatherData() {
-        uiState.value = WeatherUiState(
-            isLoading = false,
-            forecasts = listOf(mockForecast),
-            cityName = "Cape Town"
+    fun weatherScreen_DisplaysWeatherData() = runTest {
+        coEvery {
+            weatherApi.getWeatherForecast(
+                lat = any(),
+                lon = any(),
+                apiKey = any(),
+                units = any()
+            )
+        } returns com.example.bestbikeday.data.WeatherResponse(
+            list = listOf(mockForecast),
+            city = com.example.bestbikeday.data.WeatherCity(
+                name = "Cape Town",
+                country = "ZA",
+                coordinates = com.example.bestbikeday.data.Coordinates(
+                    lat = -33.9249,
+                    lon = 18.4241
+                )
+            )
         )
 
         launchWeatherScreen()
@@ -141,33 +158,41 @@ class WeatherScreenTest {
         composeTestRule.onNodeWithText("30°").assertExists()
         composeTestRule.onNodeWithText("20°").assertExists()
         composeTestRule.onNodeWithText("Wind: 5 km/h").assertExists()
-        verify(atLeast = 1) { viewModel.uiState }
-        verify(atLeast = 1) {
-            viewModel.loadWeatherForecast(
+        coVerify(atLeast = 1) {
+            weatherApi.getWeatherForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
-                apiKey = any()
+                apiKey = any(),
+                units = any()
             )
         }
     }
 
     @Test
-    fun weatherScreen_DisplaysError() {
-        uiState.value = WeatherUiState(
-            isLoading = false,
-            error = "Network error occurred"
-        )
+    fun weatherScreen_DisplaysError() = runTest {
+        val errorMessage = "Error message"
+        coEvery {
+            weatherApi.getWeatherForecast(
+                lat = any(),
+                lon = any(),
+                apiKey = any(),
+                units = any()
+            )
+        } throws java.io.IOException(errorMessage)
 
         launchWeatherScreen()
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("Network error occurred").assertExists()
-        verify(atLeast = 1) { viewModel.uiState }
-        verify(atLeast = 1) {
-            viewModel.loadWeatherForecast(
+        composeTestRule
+            .onNodeWithTag("error_message")
+            .assertExists()
+
+        coVerify(atLeast = 1) {
+            weatherApi.getWeatherForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
-                apiKey = any()
+                apiKey = any(),
+                units = any()
             )
         }
     }

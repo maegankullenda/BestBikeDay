@@ -150,7 +150,7 @@ jobs:
             adb shell settings put global animator_duration_scale 0.0
             adb logcat -c
             adb logcat > emulator.log &
-            ./gradlew clean assembleDebugAndroidTest connectedDebugAndroidTest --stacktrace
+            ./gradlew clean testDebugUnitTest connectedDebugAndroidTest jacocoTestReport --stacktrace
             pkill -f adb
 
       - name: Upload Emulator Log
@@ -163,16 +163,16 @@ jobs:
             ~/android-sdk/emulator/emulator.log
           retention-days: 5
 
-      - name: Upload Instrumented Test Results
+      - name: Upload Test Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: instrumented-test-results
+          name: test-reports
           path: |
+            app/build/reports/tests/
             app/build/reports/androidTests/
-            app/build/outputs/androidTest-results/
-            app/build/outputs/logs/
-          retention-days: 5
+            app/build/reports/jacoco/
+          retention-days: 14
 
   build-debug:
     name: Build Debug APK

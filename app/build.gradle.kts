@@ -45,7 +45,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments += mapOf(
-            "clearPackageData" to "true"
+            "clearPackageData" to "true",
+            "disableAnalytics" to "true"
         )
     }
 
@@ -64,6 +65,15 @@ android {
                 it.extensions.configure<JacocoTaskExtension> {
                     isIncludeNoLocationClasses = true
                     excludes = listOf("jdk.internal.*")
+                }
+            }
+        }
+        managedDevices {
+            devices {
+                maybeCreate<com.android.build.api.dsl.ManagedVirtualDevice>("pixel2api30").apply {
+                    device = "Pixel 2"
+                    apiLevel = 30
+                    systemImageSource = "aosp"
                 }
             }
         }

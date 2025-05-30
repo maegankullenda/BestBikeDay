@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.bestbikeday.data.City
 import com.example.bestbikeday.data.SouthAfricanCities
+import com.example.bestbikeday.ui.theme.BestBikeDayTheme
 import org.junit.Rule
 import org.junit.Test
 
@@ -17,11 +18,14 @@ class SettingsScreenTest {
     @Test
     fun settingsScreen_displaysTitle() {
         composeTestRule.setContent {
-            SettingsScreen(
-                onNavigateToWeather = { _, _ -> }
-            )
+            BestBikeDayTheme {
+                SettingsScreen(
+                    onNavigateToWeather = { _, _ -> }
+                )
+            }
         }
 
+        composeTestRule.waitForIdle()
         composeTestRule
             .onNodeWithText("Weather Settings")
             .assertIsDisplayed()
@@ -30,11 +34,14 @@ class SettingsScreenTest {
     @Test
     fun settingsScreen_displaysDefaultCity() {
         composeTestRule.setContent {
-            SettingsScreen(
-                onNavigateToWeather = { _, _ -> }
-            )
+            BestBikeDayTheme {
+                SettingsScreen(
+                    onNavigateToWeather = { _, _ -> }
+                )
+            }
         }
 
+        composeTestRule.waitForIdle()
         composeTestRule
             .onNodeWithText(SouthAfricanCities.cities.first().name)
             .assertIsDisplayed()
@@ -43,11 +50,14 @@ class SettingsScreenTest {
     @Test
     fun settingsScreen_displaysViewWeatherButton() {
         composeTestRule.setContent {
-            SettingsScreen(
-                onNavigateToWeather = { _, _ -> }
-            )
+            BestBikeDayTheme {
+                SettingsScreen(
+                    onNavigateToWeather = { _, _ -> }
+                )
+            }
         }
 
+        composeTestRule.waitForIdle()
         composeTestRule
             .onNodeWithText("View Weather Forecast")
             .assertIsDisplayed()
@@ -59,14 +69,17 @@ class SettingsScreenTest {
         var navigatedDays = 0
 
         composeTestRule.setContent {
-            SettingsScreen(
-                onNavigateToWeather = { city, days ->
-                    navigatedCity = city
-                    navigatedDays = days
-                }
-            )
+            BestBikeDayTheme {
+                SettingsScreen(
+                    onNavigateToWeather = { city, days ->
+                        navigatedCity = city
+                        navigatedDays = days
+                    }
+                )
+            }
         }
 
+        composeTestRule.waitForIdle()
         composeTestRule
             .onNodeWithText("View Weather Forecast")
             .performClick()

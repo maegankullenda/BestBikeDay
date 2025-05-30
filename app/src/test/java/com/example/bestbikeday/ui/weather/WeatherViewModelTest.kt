@@ -12,9 +12,6 @@ import com.example.bestbikeday.data.Wind
 import io.mockk.coEvery
 import io.mockk.mockk
 import java.io.IOException
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,6 +21,9 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WeatherViewModelTest {
@@ -81,7 +81,7 @@ class WeatherViewModelTest {
             val final = awaitItem()
             assertEquals("Cape Town", final.cityName)
             assertEquals(1, final.forecasts.size)
-            assertEquals(25.0, final.forecasts[0].main.temp)
+            assertEquals(25.0, final.forecasts[0].main.temp, 0.001)
             assertNull(final.error)
         }
     }

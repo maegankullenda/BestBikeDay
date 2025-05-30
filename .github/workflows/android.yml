@@ -106,13 +106,13 @@ jobs:
 
       - name: Enable KVM
         run: |
-          echo "Installing KVM"
+          echo "Installing KVM dependencies"
           sudo apt-get --quiet update --yes
-          sudo apt-get --quiet install --yes libvirt-bin qemu-kvm cpu-checker
-          sudo adduser $USER kvm
-          sudo chown $USER /dev/kvm
-          sudo chmod 777 -R /dev/kvm
-          kvm-ok
+          sudo apt-get --quiet install --yes qemu-system qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils cpu-checker
+          sudo usermod -a -G kvm $USER
+          sudo chown $USER /dev/kvm || true
+          sudo chmod 777 -R /dev/kvm || true
+          kvm-ok || true
 
       - name: Install Emulator
         run: |

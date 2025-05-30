@@ -11,15 +11,21 @@ import com.example.bestbikeday.data.MainWeather
 import com.example.bestbikeday.data.Weather
 import com.example.bestbikeday.data.Wind
 import com.example.bestbikeday.ui.theme.BestBikeDayTheme
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class WeatherScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    private lateinit var viewModel: WeatherViewModel
+    private lateinit var uiState: MutableStateFlow<WeatherUiState>
 
     private val mockCity = City(
         name = "Cape Town",
@@ -28,7 +34,7 @@ class WeatherScreenTest {
     )
 
     private val mockForecast = ForecastItem(
-        date = System.currentTimeMillis(),
+        date = System.currentTimeMillis() / 1000, // Convert to seconds
         main = MainWeather(
             temp = 25.0,
             tempMin = 20.0,
@@ -45,17 +51,36 @@ class WeatherScreenTest {
         wind = Wind(speed = 5.0)
     )
 
+    @Before
+    fun setup() {
+        uiState = MutableStateFlow(WeatherUiState())
+        viewModel = mockk(relaxed = true) {
+            every { uiState } returns uiState
+            coEvery { 
+                loadWeatherForecast(
+                    lat = any(),
+                    lon = any(),
+                    apiKey = any()
+                )
+            } returns Unit
+        }
+    }
+
     @Test
     fun weatherScreen_displaysLoadingState() {
+        uiState.value = WeatherUiState(isLoading = true)
+
         composeTestRule.setContent {
-            WeatherScreen(
-                city = mockCity,
-                numberOfDays = 5,
-                onBackClick = {}
-            )
+            BestBikeDayTheme {
+                WeatherScreen(
+                    city = mockCity,
+                    numberOfDays = 5,
+                    onBackClick = {},
+                    viewModel = viewModel
+                )
+            }
         }
 
-        // Initially shows loading state
         composeTestRule
             .onNodeWithText("Weather Forecast")
             .assertIsDisplayed()
@@ -66,11 +91,14 @@ class WeatherScreenTest {
         var backClicked = false
 
         composeTestRule.setContent {
-            WeatherScreen(
-                city = mockCity,
-                numberOfDays = 5,
-                onBackClick = { backClicked = true }
-            )
+            BestBikeDayTheme {
+                WeatherScreen(
+                    city = mockCity,
+                    numberOfDays = 5,
+                    onBackClick = { backClicked = true },
+                    viewModel = viewModel
+                )
+            }
         }
 
         composeTestRule
@@ -83,13 +111,10 @@ class WeatherScreenTest {
     @Test
     fun weatherScreen_DisplaysWeatherData() {
         // Given
-        val viewModel = mockk<WeatherViewModel>(relaxed = true)
-        every { viewModel.uiState } returns MutableStateFlow(
-            WeatherUiState(
-                isLoading = false,
-                forecasts = listOf(mockForecast),
-                cityName = "Cape Town"
-            )
+        uiState.value = WeatherUiState(
+            isLoading = false,
+            forecasts = listOf(mockForecast),
+            cityName = "Cape Town"
         )
 
         // When
@@ -114,12 +139,9 @@ class WeatherScreenTest {
     @Test
     fun weatherScreen_DisplaysError() {
         // Given
-        val viewModel = mockk<WeatherViewModel>(relaxed = true)
-        every { viewModel.uiState } returns MutableStateFlow(
-            WeatherUiState(
-                isLoading = false,
-                error = "Network error occurred"
-            )
+        uiState.value = WeatherUiState(
+            isLoading = false,
+            error = "Network error occurred"
         )
 
         // When

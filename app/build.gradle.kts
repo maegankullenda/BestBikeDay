@@ -56,6 +56,10 @@ android {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
         }
+        // Configure coverage
+        coverageOptions {
+            jacocoVersion = "0.8.8"
+        }
     }
 
     packaging {

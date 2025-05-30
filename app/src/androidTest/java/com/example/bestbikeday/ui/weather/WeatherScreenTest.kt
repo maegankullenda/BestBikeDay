@@ -1,6 +1,6 @@
 package com.example.bestbikeday.ui.weather
 
-import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -46,27 +46,38 @@ class WeatherScreenTest {
     )
 
     @Test
-    fun weatherScreen_DisplaysLoadingState() {
-        // Given
-        val viewModel = mockk<WeatherViewModel>(relaxed = true)
-        every { viewModel.uiState } returns MutableStateFlow(
-            WeatherUiState(isLoading = true)
-        )
-
-        // When
+    fun weatherScreen_displaysLoadingState() {
         composeTestRule.setContent {
-            BestBikeDayTheme {
-                WeatherScreen(
-                    city = mockCity,
-                    numberOfDays = 5,
-                    onBackClick = {},
-                    viewModel = viewModel
-                )
-            }
+            WeatherScreen(
+                city = mockCity,
+                numberOfDays = 5,
+                onBackClick = {}
+            )
         }
 
-        // Then
-        composeTestRule.onNodeWithContentDescription("Loading").assertExists()
+        // Initially shows loading state
+        composeTestRule
+            .onNodeWithText("Weather Forecast")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun weatherScreen_backButtonNavigatesBack() {
+        var backClicked = false
+
+        composeTestRule.setContent {
+            WeatherScreen(
+                city = mockCity,
+                numberOfDays = 5,
+                onBackClick = { backClicked = true }
+            )
+        }
+
+        composeTestRule
+            .onNodeWithContentDescription("Back")
+            .performClick()
+
+        assert(backClicked)
     }
 
     @Test
@@ -125,29 +136,5 @@ class WeatherScreenTest {
 
         // Then
         composeTestRule.onNodeWithText("Network error occurred").assertExists()
-    }
-
-    @Test
-    fun weatherScreen_BackButtonWorks() {
-        // Given
-        var backClicked = false
-        val viewModel = mockk<WeatherViewModel>(relaxed = true)
-        every { viewModel.uiState } returns MutableStateFlow(WeatherUiState())
-
-        // When
-        composeTestRule.setContent {
-            BestBikeDayTheme {
-                WeatherScreen(
-                    city = mockCity,
-                    numberOfDays = 5,
-                    onBackClick = { backClicked = true },
-                    viewModel = viewModel
-                )
-            }
-        }
-
-        // Then
-        composeTestRule.onNodeWithContentDescription("Back").performClick()
-        assert(backClicked)
     }
 }

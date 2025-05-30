@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.bestbikeday.data.ForecastItem
 import com.example.bestbikeday.data.WeatherApi
 import com.example.bestbikeday.data.WeatherApiClient
+import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 data class WeatherUiState(
     val isLoading: Boolean = false,
@@ -23,7 +23,7 @@ class WeatherViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WeatherUiState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
-    
+
     fun loadWeatherForecast(lat: Double, lon: Double, apiKey: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)

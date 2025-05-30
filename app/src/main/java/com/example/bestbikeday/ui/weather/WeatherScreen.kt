@@ -146,17 +146,27 @@ fun WeatherCard(
             Column(
                 horizontalAlignment = Alignment.Start
             ) {
+                val dateFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
                 Text(
-                    text = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
-                        .format(Date(forecast.date * 1000)),
+                    text = dateFormat.format(Date(forecast.date * 1000)),
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                val description = forecast.weather.firstOrNull()?.description?.let { desc ->
+                    val firstChar = desc.first()
+                    val titlecaseChar = if (firstChar.isLowerCase()) {
+                        firstChar.titlecase(Locale.getDefault())
+                    } else {
+                        firstChar.toString()
+                    }
+                    titlecaseChar + desc.substring(1)
+                } ?: "Unknown"
+
                 Text(
-                    text = forecast.weather.firstOrNull()?.description?.capitalize() ?: "Unknown",
+                    text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.DarkGray
                 )
@@ -195,5 +205,7 @@ fun WeatherCard(
 }
 
 private fun String.capitalize(): String {
-    return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+    return this.replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+    }
 }

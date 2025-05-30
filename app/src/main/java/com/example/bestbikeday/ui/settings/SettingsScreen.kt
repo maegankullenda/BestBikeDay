@@ -41,7 +41,7 @@ fun SettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFFE4E1)) // Light Pink background
+            .background(Color(0xFFFFE4E1))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -52,7 +52,6 @@ fun SettingsScreen(
             modifier = Modifier.padding(vertical = 16.dp)
         )
 
-        // City Selector
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
@@ -84,7 +83,6 @@ fun SettingsScreen(
             }
         }
 
-        // Days Selector
         Column(
             horizontalAlignment = Alignment.Start,
             modifier = Modifier.fillMaxWidth()
@@ -94,7 +92,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -109,7 +107,6 @@ fun SettingsScreen(
             }
         }
 
-        // View Weather Button
         Button(
             onClick = { onNavigateToWeather(selectedCity, numberOfDays) },
             modifier = Modifier

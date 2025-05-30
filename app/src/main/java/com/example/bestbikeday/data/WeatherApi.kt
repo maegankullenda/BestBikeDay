@@ -1,42 +1,28 @@
 package com.example.bestbikeday.data
 
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface WeatherApi {
-    @GET("data/2.5/forecast")
+    @GET("forecast")
     suspend fun getWeatherForecast(
         @Query("lat") lat: Double,
         @Query("lon") lon: Double,
-        @Query("units") units: String = "metric",
-        @Query("appid") apiKey: String
+        @Query("appid") apiKey: String,
+        @Query("units") units: String = "metric"
     ): WeatherResponse
 }
 
-annotation class GET(val value: String)
-
 object WeatherApiClient {
-    private const val BASE_URL = "https://api.openweathermap.org/"
+    private const val BASE_URL = "https://api.openweathermap.org/data/2.5/"
 
     fun create(): WeatherApi {
-        val moshi = com.squareup.moshi.Moshi.Builder()
-            .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
-            .build()
-
-        val retrofit = retrofit2.Retrofit.Builder()
+        return Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(retrofit2.converter.moshi.MoshiConverterFactory.create(moshi))
-            .client(
-                okhttp3.OkHttpClient.Builder()
-                    .addInterceptor(
-                        okhttp3.logging.HttpLoggingInterceptor().apply {
-                            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
-                        }
-                    )
-                    .build()
-            )
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
-
-        return retrofit.create(WeatherApi::class.java)
+            .create(WeatherApi::class.java)
     }
 }

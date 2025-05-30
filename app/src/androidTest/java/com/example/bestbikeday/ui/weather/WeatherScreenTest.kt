@@ -18,6 +18,7 @@ import com.example.bestbikeday.ui.theme.BestBikeDayTheme
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
@@ -59,20 +60,17 @@ class WeatherScreenTest {
     @Before
     fun setup() {
         uiState = MutableStateFlow(WeatherUiState())
-        // Create a proper mock of the ViewModel
-        viewModel = mockk<WeatherViewModel>(relaxed = true).also {
-            every { it.uiState } returns uiState
-            coEvery { it.loadWeatherForecast(any(), any(), any()) } returns Unit
+        viewModel = mockk(relaxed = true) {
+            every { uiState } returns this@WeatherScreenTest.uiState
+            coEvery { loadWeatherForecast(any(), any(), any()) } returns Unit
         }
 
-        // Create a proper ViewModelStoreOwner mock
-        viewModelStoreOwner = mockk<androidx.lifecycle.ViewModelStoreOwner>(relaxed = true).also {
-            every { it.viewModelStore } returns ViewModelStore()
+        viewModelStoreOwner = mockk {
+            every { viewModelStore } returns ViewModelStore()
         }
 
-        // Set up the factory mock
-        factory = mockk<ViewModelProvider.Factory>().also {
-            every { it.create(WeatherViewModel::class.java) } returns viewModel
+        factory = mockk {
+            every { create(WeatherViewModel::class.java) } returns viewModel
         }
     }
 
@@ -101,18 +99,19 @@ class WeatherScreenTest {
         composeTestRule
             .onNodeWithText("Weather Forecast")
             .assertIsDisplayed()
+        verify { viewModel.uiState }
     }
 
     @Test
     fun weatherScreen_backButtonNavigatesBack() {
         var backClicked = false
         launchWeatherScreen { backClicked = true }
-
         composeTestRule
             .onNodeWithContentDescription("Back")
             .performClick()
 
         assert(backClicked)
+        verify { viewModel.uiState }
     }
 
     @Test
@@ -129,6 +128,7 @@ class WeatherScreenTest {
         composeTestRule.onNodeWithText("30°").assertExists()
         composeTestRule.onNodeWithText("20°").assertExists()
         composeTestRule.onNodeWithText("Wind: 5 km/h").assertExists()
+        verify { viewModel.uiState }
     }
 
     @Test
@@ -141,5 +141,6 @@ class WeatherScreenTest {
         launchWeatherScreen()
 
         composeTestRule.onNodeWithText("Network error occurred").assertExists()
+        verify { viewModel.uiState }
     }
 }

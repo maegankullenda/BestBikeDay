@@ -81,6 +81,8 @@ jobs:
     name: Run Instrumented Tests
     needs: validate
     runs-on: macos-latest
+    timeout-minutes: 45
+
     steps:
       - uses: actions/checkout@v3
 
@@ -90,6 +92,10 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: gradle
+
+      - name: Enable KVM group access
+        run: |
+          echo "Hardware acceleration not needed on macOS"
 
       - name: Create keystore.properties
         env:
@@ -102,17 +108,35 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
-          target: default
+          target: google_apis
           arch: x86
-          profile: Nexus 6
-          script: ./gradlew connectedAndroidTest --stacktrace
+          profile: pixel_2
+          cores: 2
+          ram-size: 4096M
+          heap-size: 2048M
+          disk-size: 4096M
+          script: |
+            adb logcat -c
+            adb logcat > emulator.log &
+            ./gradlew connectedAndroidTest --stacktrace
+            pkill -f adb
+
+      - name: Upload Emulator Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-log
+          path: emulator.log
+          retention-days: 5
 
       - name: Upload Instrumented Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: instrumented-test-results
-          path: app/build/reports/androidTests/
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
           retention-days: 5
 
   build-debug:

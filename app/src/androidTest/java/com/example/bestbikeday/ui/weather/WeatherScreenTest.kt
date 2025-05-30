@@ -18,8 +18,10 @@ import com.example.bestbikeday.ui.theme.BestBikeDayTheme
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -30,7 +32,6 @@ class WeatherScreenTest {
 
     private lateinit var viewModel: WeatherViewModel
     private lateinit var uiState: MutableStateFlow<WeatherUiState>
-    private lateinit var factory: ViewModelProvider.Factory
     private lateinit var viewModelStoreOwner: androidx.lifecycle.ViewModelStoreOwner
 
     private val mockCity = City(
@@ -59,18 +60,24 @@ class WeatherScreenTest {
 
     @Before
     fun setup() {
-        uiState = MutableStateFlow(WeatherUiState())
-        viewModel = mockk(relaxed = true) {
-            every { uiState } returns this@WeatherScreenTest.uiState
-            coEvery { loadWeatherForecast(any(), any(), any()) } returns Unit
+        // Create a spied StateFlow for better control and verification
+        uiState = spyk(MutableStateFlow(WeatherUiState()))
+        
+        // Create the ViewModel mock with relaxed settings for better stability
+        viewModel = mockk<WeatherViewModel>(relaxed = true).apply {
+            every { uiState } returns uiState
+            coEvery { 
+                loadWeatherForecast(
+                    lat = any(),
+                    lon = any(),
+                    numberOfDays = any()
+                ) 
+            } returns Unit
         }
 
-        viewModelStoreOwner = mockk {
+        // Create a ViewModelStoreOwner mock with a real ViewModelStore
+        viewModelStoreOwner = mockk<androidx.lifecycle.ViewModelStoreOwner>(relaxed = true).apply {
             every { viewModelStore } returns ViewModelStore()
-        }
-
-        factory = mockk {
-            every { create(WeatherViewModel::class.java) } returns viewModel
         }
     }
 
@@ -89,58 +96,100 @@ class WeatherScreenTest {
                 }
             }
         }
+        // Ensure composition is complete
+        composeTestRule.waitForIdle()
     }
 
     @Test
     fun weatherScreen_displaysLoadingState() {
+        // Given
         uiState.value = WeatherUiState(isLoading = true)
+        
+        // When
         launchWeatherScreen()
+        composeTestRule.waitForIdle()
 
+        // Then
         composeTestRule
             .onNodeWithText("Weather Forecast")
             .assertIsDisplayed()
-        verify { viewModel.uiState }
+        verify(atLeast = 1) { viewModel.uiState }
+        verify(atLeast = 1) { 
+            viewModel.loadWeatherForecast(
+                lat = mockCity.lat,
+                lon = mockCity.lon,
+                numberOfDays = 5
+            )
+        }
     }
 
     @Test
     fun weatherScreen_backButtonNavigatesBack() {
+        // Given
         var backClicked = false
-        launchWeatherScreen { backClicked = true }
+        val onBackClick: () -> Unit = { backClicked = true }
+        
+        // When
+        launchWeatherScreen(onBackClick)
+        composeTestRule.waitForIdle()
         composeTestRule
             .onNodeWithContentDescription("Back")
             .performClick()
 
-        assert(backClicked)
-        verify { viewModel.uiState }
+        // Then
+        assert(backClicked) { "Back button click was not registered" }
+        verify(atLeast = 1) { viewModel.uiState }
     }
 
     @Test
     fun weatherScreen_DisplaysWeatherData() {
+        // Given
         uiState.value = WeatherUiState(
             isLoading = false,
             forecasts = listOf(mockForecast),
             cityName = "Cape Town"
         )
 
+        // When
         launchWeatherScreen()
+        composeTestRule.waitForIdle()
 
+        // Then
         composeTestRule.onNodeWithText("Weather Forecast for Cape Town").assertExists()
         composeTestRule.onNodeWithText("30°").assertExists()
         composeTestRule.onNodeWithText("20°").assertExists()
         composeTestRule.onNodeWithText("Wind: 5 km/h").assertExists()
-        verify { viewModel.uiState }
+        verify(atLeast = 1) { viewModel.uiState }
+        verify(atLeast = 1) { 
+            viewModel.loadWeatherForecast(
+                lat = mockCity.lat,
+                lon = mockCity.lon,
+                numberOfDays = 5
+            )
+        }
     }
 
     @Test
     fun weatherScreen_DisplaysError() {
+        // Given
         uiState.value = WeatherUiState(
             isLoading = false,
             error = "Network error occurred"
         )
 
+        // When
         launchWeatherScreen()
+        composeTestRule.waitForIdle()
 
+        // Then
         composeTestRule.onNodeWithText("Network error occurred").assertExists()
-        verify { viewModel.uiState }
+        verify(atLeast = 1) { viewModel.uiState }
+        verify(atLeast = 1) { 
+            viewModel.loadWeatherForecast(
+                lat = mockCity.lat,
+                lon = mockCity.lon,
+                numberOfDays = 5
+            )
+        }
     }
 }

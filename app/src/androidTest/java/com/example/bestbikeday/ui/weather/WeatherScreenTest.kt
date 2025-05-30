@@ -7,7 +7,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.example.bestbikeday.data.City
 import com.example.bestbikeday.data.ForecastItem
@@ -18,7 +17,6 @@ import com.example.bestbikeday.ui.theme.BestBikeDayTheme
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
@@ -62,14 +60,12 @@ class WeatherScreenTest {
         viewModel = mockk(relaxed = true)
         every { viewModel.uiState } returns uiState
 
-        // Mock the ViewModel factory
         factory = mockk {
-            every { 
+            every {
                 create(WeatherViewModel::class.java)
             } returns viewModel
         }
 
-        // Mock the suspend function
         coEvery {
             viewModel.loadWeatherForecast(any(), any(), any())
         } returns Unit
@@ -116,35 +112,29 @@ class WeatherScreenTest {
 
     @Test
     fun weatherScreen_DisplaysWeatherData() {
-        // Given
         uiState.value = WeatherUiState(
             isLoading = false,
             forecasts = listOf(mockForecast),
             cityName = "Cape Town"
         )
 
-        // When
         launchWeatherScreen()
 
-        // Then
         composeTestRule.onNodeWithText("Weather Forecast for Cape Town").assertExists()
-        composeTestRule.onNodeWithText("30°").assertExists() // Max temp
-        composeTestRule.onNodeWithText("20°").assertExists() // Min temp
+        composeTestRule.onNodeWithText("30°").assertExists()
+        composeTestRule.onNodeWithText("20°").assertExists()
         composeTestRule.onNodeWithText("Wind: 5 km/h").assertExists()
     }
 
     @Test
     fun weatherScreen_DisplaysError() {
-        // Given
         uiState.value = WeatherUiState(
             isLoading = false,
             error = "Network error occurred"
         )
 
-        // When
         launchWeatherScreen()
 
-        // Then
         composeTestRule.onNodeWithText("Network error occurred").assertExists()
     }
 }

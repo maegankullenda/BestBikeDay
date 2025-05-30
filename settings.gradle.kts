@@ -22,4 +22,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Best bike day"
 include(":app")
- 

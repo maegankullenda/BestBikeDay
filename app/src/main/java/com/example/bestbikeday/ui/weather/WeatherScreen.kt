@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,8 +19,6 @@ import com.example.bestbikeday.data.City
 import com.example.bestbikeday.data.ForecastItem
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 
 // Define colors
 private val SkyBlue = Color(0xFF87CEEB)
@@ -34,7 +34,7 @@ fun WeatherScreen(
     viewModel: WeatherViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
     LaunchedEffect(city) {
         viewModel.loadWeatherForecast(
             lat = city.lat,
@@ -42,7 +42,7 @@ fun WeatherScreen(
             apiKey = BuildConfig.OPENWEATHER_API_KEY
         )
     }
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -61,7 +61,7 @@ fun WeatherScreen(
                 }
             }
         )
-        
+
         Text(
             text = if (uiState.cityName.isNotEmpty()) {
                 "Weather Forecast for ${uiState.cityName}"
@@ -71,7 +71,7 @@ fun WeatherScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(16.dp)
         )
-        
+
         when {
             uiState.isLoading -> {
                 CircularProgressIndicator(
@@ -132,16 +132,16 @@ fun WeatherCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Text(
                     text = forecast.weather.firstOrNull()?.description?.capitalize() ?: "Unknown",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.DarkGray
                 )
             }
-            
+
             // Temperature and Wind
             Column(
                 horizontalAlignment = Alignment.End
@@ -161,9 +161,9 @@ fun WeatherCard(
                         color = Color.DarkGray
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Text(
                     text = "Wind: ${forecast.wind.speed.toInt()} km/h",
                     style = MaterialTheme.typography.bodyMedium,
@@ -176,4 +176,4 @@ fun WeatherCard(
 
 private fun String.capitalize(): String {
     return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-} 
+}

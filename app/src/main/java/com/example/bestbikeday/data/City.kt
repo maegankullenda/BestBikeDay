@@ -19,4 +19,4 @@ object SouthAfricanCities {
         City("Polokwane", -23.9045, 29.4688),
         City("East London", -33.0153, 27.9116)
     )
-} 
+}

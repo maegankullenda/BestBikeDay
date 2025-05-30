@@ -7,7 +7,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.bestbikeday.data.City
 import com.example.bestbikeday.data.SouthAfricanCities
@@ -78,7 +77,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -103,4 +102,4 @@ fun SettingsScreen(
             Text("View Weather Forecast")
         }
     }
-} 
+}

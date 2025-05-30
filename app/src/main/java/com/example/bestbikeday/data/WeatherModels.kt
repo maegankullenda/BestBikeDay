@@ -80,4 +80,4 @@ data class Weather(
 @JsonClass(generateAdapter = true)
 data class Wind(
     @Json(name = "speed") val speed: Double
-) 
+)

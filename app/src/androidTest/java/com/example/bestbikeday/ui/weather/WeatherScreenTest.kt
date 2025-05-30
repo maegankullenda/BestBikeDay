@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.example.bestbikeday.data.City
 import com.example.bestbikeday.data.ForecastItem
@@ -17,6 +18,7 @@ import com.example.bestbikeday.ui.theme.BestBikeDayTheme
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
@@ -29,6 +31,7 @@ class WeatherScreenTest {
     private lateinit var viewModel: WeatherViewModel
     private lateinit var uiState: MutableStateFlow<WeatherUiState>
     private lateinit var factory: ViewModelProvider.Factory
+    private lateinit var viewModelStoreOwner: androidx.lifecycle.ViewModelStoreOwner
 
     private val mockCity = City(
         name = "Cape Town",
@@ -57,25 +60,29 @@ class WeatherScreenTest {
     @Before
     fun setup() {
         uiState = MutableStateFlow(WeatherUiState())
-        viewModel = mockk(relaxed = true)
-        every { viewModel.uiState } returns uiState
-
-        factory = mockk {
-            every {
-                create(WeatherViewModel::class.java)
-            } returns viewModel
+        
+        // Create a proper mock of the ViewModel
+        viewModel = mockk<WeatherViewModel>(relaxed = true).also {
+            every { it.uiState } returns uiState
+            coEvery { it.loadWeatherForecast(any(), any(), any()) } returns Unit
         }
 
-        coEvery {
-            viewModel.loadWeatherForecast(any(), any(), any())
-        } returns Unit
+        // Create a proper ViewModelStoreOwner mock
+        viewModelStoreOwner = mockk<androidx.lifecycle.ViewModelStoreOwner>(relaxed = true).also {
+            every { it.viewModelStore } returns ViewModelStore()
+        }
+
+        // Set up the factory mock
+        factory = mockk<ViewModelProvider.Factory>().also {
+            every { it.create(WeatherViewModel::class.java) } returns viewModel
+        }
     }
 
     private fun launchWeatherScreen(onBackClick: () -> Unit = {}) {
         composeTestRule.setContent {
             BestBikeDayTheme {
                 CompositionLocalProvider(
-                    LocalViewModelStoreOwner provides mockk(relaxed = true)
+                    LocalViewModelStoreOwner provides viewModelStoreOwner
                 ) {
                     WeatherScreen(
                         city = mockCity,

@@ -151,7 +151,9 @@ jobs:
             adb logcat -c
             adb logcat > emulator.log &
             ./gradlew clean testDebugUnitTest connectedDebugAndroidTest jacocoTestReport --stacktrace
-            pkill -f adb
+            # Gracefully stop ADB and ignore any errors
+            adb kill-server || true
+            pkill -f adb || true
 
       - name: Upload Emulator Log
         if: always()

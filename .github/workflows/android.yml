@@ -104,20 +104,26 @@ jobs:
           echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
           echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
 
-      - name: Enable KVM
+      - name: Enable KVM and Install Dependencies
         run: |
-          echo "Installing KVM dependencies"
-          sudo apt-get --quiet update --yes
-          sudo apt-get --quiet install --yes qemu-system qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils cpu-checker
-          sudo usermod -a -G kvm $USER
+          echo "Installing KVM and required dependencies..."
+          sudo apt-get update
+          sudo apt-get install -y bridge-utils cpu-checker qemu-kvm libvirt-daemon-system libvirt-clients
+          sudo kvm-ok || true
+          sudo adduser $USER kvm
           sudo chown $USER /dev/kvm || true
-          sudo chmod 777 -R /dev/kvm || true
-          kvm-ok || true
+          sudo chmod 777 /dev/kvm || true
 
-      - name: Install Emulator
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Install system image
         run: |
           echo "y" | sdkmanager "system-images;android-${{ env.API_LEVEL }};default;x86_64"
-          echo "no" | avdmanager create avd -n test_device -k "system-images;android-${{ env.API_LEVEL }};default;x86_64" --force
+          echo "no" | avdmanager --verbose create avd -n test_device -k "system-images;android-${{ env.API_LEVEL }};default;x86_64" --force
 
       - name: Run Instrumented Tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -126,16 +132,19 @@ jobs:
           target: default
           arch: x86_64
           profile: pixel_2
-          cores: 2
-          ram-size: 4096M
-          heap-size: 2048M
-          disk-size: 4096M
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-accel
+          avd-name: test_device
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
+          disk-size: 8192M
+          heap-size: 4096M
+          ram-size: 4096M
+          cores: 2
+          emulator-boot-timeout: 900
           script: |
-            adb devices
             adb wait-for-device
-            sleep 30
+            adb devices
+            sleep 60
             adb shell settings put global window_animation_scale 0.0
             adb shell settings put global transition_animation_scale 0.0
             adb shell settings put global animator_duration_scale 0.0

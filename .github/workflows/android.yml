@@ -81,7 +81,7 @@ jobs:
   instrumented-tests:
     name: Run Instrumented Tests
     needs: validate
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
@@ -104,32 +104,38 @@ jobs:
           echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
           echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
 
-      - name: List available emulator images
+      - name: Enable KVM
         run: |
-          sdkmanager --list | grep system-images
+          echo "Installing KVM"
+          sudo apt-get --quiet update --yes
+          sudo apt-get --quiet install --yes libvirt-bin qemu-kvm cpu-checker
+          sudo adduser $USER kvm
+          sudo chown $USER /dev/kvm
+          sudo chmod 777 -R /dev/kvm
+          kvm-ok
 
       - name: Install Emulator
         run: |
-          sdkmanager "system-images;android-${{ env.API_LEVEL }};default;arm64-v8a"
-          echo "no" | avdmanager create avd -n test_device -k "system-images;android-${{ env.API_LEVEL }};default;arm64-v8a" --force
+          echo "y" | sdkmanager "system-images;android-${{ env.API_LEVEL }};default;x86_64"
+          echo "no" | avdmanager create avd -n test_device -k "system-images;android-${{ env.API_LEVEL }};default;x86_64" --force
 
       - name: Run Instrumented Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ env.API_LEVEL }}
           target: default
-          arch: arm64-v8a
+          arch: x86_64
           profile: pixel_2
           cores: 2
           ram-size: 4096M
           heap-size: 2048M
           disk-size: 4096M
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -accel off
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-accel
           disable-animations: true
           script: |
             adb devices
             adb wait-for-device
-            sleep 20
+            sleep 30
             adb shell settings put global window_animation_scale 0.0
             adb shell settings put global transition_animation_scale 0.0
             adb shell settings put global animator_duration_scale 0.0
@@ -145,7 +151,7 @@ jobs:
           name: emulator-log
           path: |
             emulator.log
-            ~/Library/Logs/androidstudio*
+            ~/android-sdk/emulator/emulator.log
           retention-days: 5
 
       - name: Upload Instrumented Test Results

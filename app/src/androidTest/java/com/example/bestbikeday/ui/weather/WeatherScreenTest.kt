@@ -59,7 +59,6 @@ class WeatherScreenTest {
     @Before
     fun setup() {
         uiState = MutableStateFlow(WeatherUiState())
-        
         // Create a proper mock of the ViewModel
         viewModel = mockk<WeatherViewModel>(relaxed = true).also {
             every { it.uiState } returns uiState

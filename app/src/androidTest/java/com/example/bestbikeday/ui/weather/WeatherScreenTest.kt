@@ -15,7 +15,6 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -56,7 +55,7 @@ class WeatherScreenTest {
         uiState = MutableStateFlow(WeatherUiState())
         viewModel = mockk(relaxed = true) {
             every { uiState } returns uiState
-            coEvery { 
+            coEvery {
                 loadWeatherForecast(
                     lat = any(),
                     lon = any(),

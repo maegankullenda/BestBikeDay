@@ -213,7 +213,7 @@ jobs:
           retention-days: 5
 
   build-release:
-    name: Build Release APK
+    name: Build Release APK and Bundle
     needs: [unit-tests, instrumented-tests]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -234,15 +234,24 @@ jobs:
           echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
           echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace
+      - name: Build Release APK and Bundle
+        run: |
+          ./gradlew assembleRelease bundleRelease --stacktrace
 
       - name: Upload Release APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-apk
           path: app/build/outputs/apk/release/*.apk
+          retention-days: 5
+
+      - name: Upload Release Bundle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-bundle
+          path: app/build/outputs/bundle/release/*.aab
           retention-days: 5
 
       - name: Upload Build Reports

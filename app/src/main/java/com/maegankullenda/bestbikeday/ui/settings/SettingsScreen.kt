@@ -1,6 +1,5 @@
 package com.maegankullenda.bestbikeday.ui.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,12 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.maegankullenda.bestbikeday.data.City
 import com.maegankullenda.bestbikeday.data.SouthAfricanCities
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateToWeather: (City, Int) -> Unit,
@@ -50,32 +49,38 @@ fun SettingsScreen(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // City Dropdown
-        OutlinedTextField(
-            value = selectedCity?.name ?: "Select a city",
-            onValueChange = { },
-            readOnly = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            trailingIcon = {
-                Icon(Icons.Default.ArrowDropDown, "Expand dropdown menu")
-            }
-        )
-
-        DropdownMenu(
+        // City Dropdown using ExposedDropdownMenuBox
+        ExposedDropdownMenuBox(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            SouthAfricanCities.cities.forEach { city ->
-                DropdownMenuItem(
-                    text = { Text(city.name) },
-                    onClick = {
-                        selectedCity = city
-                        expanded = false
-                    }
-                )
+            OutlinedTextField(
+                value = selectedCity?.name ?: "Select a city",
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SouthAfricanCities.cities.forEach { city ->
+                    DropdownMenuItem(
+                        text = { Text(city.name) },
+                        onClick = {
+                            selectedCity = city
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
 

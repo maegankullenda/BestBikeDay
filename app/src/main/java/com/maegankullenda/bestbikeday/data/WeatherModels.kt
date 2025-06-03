@@ -1,13 +1,11 @@
 package com.maegankullenda.bestbikeday.data
 
 import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
 
 /**
  * Main response model for the OpenWeatherMap 5-day forecast API.
  * Contains a list of forecast items and city information.
  */
-@JsonClass(generateAdapter = true)
 data class WeatherResponse(
     @Json(name = "list") val list: List<ForecastItem>,
     @Json(name = "city") val city: WeatherCity
@@ -17,7 +15,6 @@ data class WeatherResponse(
  * Represents city information from the weather API response.
  * Contains basic city details including name, country, and geographical coordinates.
  */
-@JsonClass(generateAdapter = true)
 data class WeatherCity(
     @Json(name = "id") val id: Int,
     @Json(name = "name") val name: String,
@@ -31,7 +28,6 @@ data class WeatherCity(
  * Geographic coordinates model containing latitude and longitude.
  * Used for specifying the location for weather data.
  */
-@JsonClass(generateAdapter = true)
 data class Coordinates(
     @Json(name = "lat") val lat: Double,
     @Json(name = "lon") val lon: Double
@@ -42,7 +38,6 @@ data class Coordinates(
  * Contains main weather data, conditions, and wind information.
  * The date field is in Unix timestamp format.
  */
-@JsonClass(generateAdapter = true)
 data class ForecastItem(
     @Json(name = "dt") val date: Long,
     @Json(name = "main") val main: MainWeather,
@@ -59,7 +54,6 @@ data class ForecastItem(
  * Includes temperature data (current, min, max) and humidity.
  * All temperature values are in Celsius.
  */
-@JsonClass(generateAdapter = true)
 data class MainWeather(
     @Json(name = "temp") val temperature: Double,
     @Json(name = "feels_like") val feelsLike: Double,
@@ -78,7 +72,6 @@ data class MainWeather(
  * - description: More detailed description of the weather
  * - icon: Icon code for weather visualization
  */
-@JsonClass(generateAdapter = true)
 data class Weather(
     @Json(name = "id") val id: Int,
     @Json(name = "main") val main: String,
@@ -90,7 +83,6 @@ data class Weather(
  * Contains wind-related weather data.
  * Speed is measured in meters per second.
  */
-@JsonClass(generateAdapter = true)
 data class Wind(
     @Json(name = "speed") val speed: Double,
     @Json(name = "deg") val degree: Int,

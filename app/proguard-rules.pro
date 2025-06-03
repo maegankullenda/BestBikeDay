@@ -20,8 +20,8 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Keep the BuildConfig class
--keep class com.example.bestbikeday.BuildConfig { *; }
+# Keep the BuildConfig
+-keep class com.maegankullenda.bestbikeday.BuildConfig { *; }
 
 # Remove all logging calls
 -assumenosideeffects class android.util.Log {
@@ -32,19 +32,17 @@
     public static *** e(...);
 }
 
-# Keep required classes for API communication
--keep class com.example.bestbikeday.data.** { *; }
--keepclassmembers class com.example.bestbikeday.data.** { *; }
-
-# Keep Retrofit service methods
--keepclassmembers,allowobfuscation interface * {
+# Keep Retrofit service interfaces
+-keep,allowobfuscation interface * {
     @retrofit2.http.* <methods>;
 }
 
+# Keep data models
+-keep class com.maegankullenda.bestbikeday.data.** { *; }
+-keepclassmembers class com.maegankullenda.bestbikeday.data.** { *; }
+
 # Keep Moshi classes
--keep class com.squareup.moshi.** { *; }
--keep interface com.squareup.moshi.** { *; }
--keepclassmembers class ** {
-    @com.squareup.moshi.FromJson *;
-    @com.squareup.moshi.ToJson *;
+-keepclassmembers,allowobfuscation class * {
+    @com.squareup.moshi.* <fields>;
 }
+-keep @com.squareup.moshi.JsonQualifier @interface *

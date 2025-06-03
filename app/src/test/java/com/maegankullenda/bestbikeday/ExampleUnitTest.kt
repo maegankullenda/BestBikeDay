@@ -1,4 +1,4 @@
-package com.example.bestbikeday
+package com.maegankullenda.bestbikeday
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -33,16 +33,27 @@ jacoco {
     toolVersion = "0.8.8"
 }
 
+fun getApiKey(propertyKey: String, envKey: String, defaultValue: String): String {
+    val envValue = System.getenv(envKey) ?: defaultValue
+    return keystoreProperties[propertyKey]?.toString()?.let { "\"$it\"" } ?: "\"$envValue\""
+}
+
 android {
     namespace = "com.maegankullenda.bestbikeday"
     compileSdk = 34
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+            keyAlias = keystoreProperties["keyAlias"]?.toString()
+                ?: System.getenv("KEYSTORE_KEY_ALIAS")
+                ?: ""
+            keyPassword = keystoreProperties["keyPassword"]?.toString()
+                ?: System.getenv("KEYSTORE_KEY_PASSWORD")
+                ?: ""
             storeFile = File(project.rootDir, "bestbikeday.keystore")
-            storePassword = keystoreProperties["storePassword"] as String
+            storePassword = keystoreProperties["storePassword"]?.toString()
+                ?: System.getenv("KEYSTORE_STORE_PASSWORD")
+                ?: ""
         }
     }
 
@@ -107,8 +118,11 @@ android {
             buildConfigField(
                 "String",
                 "OPENWEATHER_API_KEY",
-                keystoreProperties["OPENWEATHER_API_KEY_DEBUG"]?.toString()?.let { "\"$it\"" }
-                    ?: "\"default_debug_key\""
+                getApiKey(
+                    "OPENWEATHER_API_KEY_DEBUG",
+                    "OPENWEATHER_API_KEY_DEBUG",
+                    "default_debug_key"
+                )
             )
             isMinifyEnabled = false
         }
@@ -116,8 +130,11 @@ android {
             buildConfigField(
                 "String",
                 "OPENWEATHER_API_KEY",
-                keystoreProperties["OPENWEATHER_API_KEY_RELEASE"]?.toString()?.let { "\"$it\"" }
-                    ?: "\"default_release_key\""
+                getApiKey(
+                    "OPENWEATHER_API_KEY_RELEASE",
+                    "OPENWEATHER_API_KEY_RELEASE",
+                    "default_release_key"
+                )
             )
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
@@ -158,6 +175,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
     // Moshi for JSON parsing
+    implementation("com.squareup.moshi:moshi:1.14.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.14.0")
 
     // Coroutines

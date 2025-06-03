@@ -99,14 +99,19 @@ fun WeatherScreen(
                 )
             }
             uiState.error != null -> {
-                Text(
-                    text = uiState.error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
+                Column(
                     modifier = Modifier
+                        .fillMaxWidth()
                         .padding(16.dp)
-                        .testTag("error_message")
-                )
+                        .testTag("error_message"),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = uiState.error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
             else -> {
                 LazyColumn(

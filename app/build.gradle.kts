@@ -1,3 +1,4 @@
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -33,11 +34,20 @@ jacoco {
 }
 
 android {
-    namespace = "com.example.bestbikeday"
+    namespace = "com.maegankullenda.bestbikeday"
     compileSdk = 34
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = File(project.rootDir, "bestbikeday.keystore")
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
+
     defaultConfig {
-        applicationId = "com.example.bestbikeday"
+        applicationId = "com.maegankullenda.bestbikeday"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -109,6 +119,7 @@ android {
                 keystoreProperties["OPENWEATHER_API_KEY_RELEASE"]?.toString()?.let { "\"$it\"" }
                     ?: "\"default_release_key\""
             )
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

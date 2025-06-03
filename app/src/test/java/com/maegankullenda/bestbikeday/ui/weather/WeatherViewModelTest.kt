@@ -1,14 +1,14 @@
-package com.example.bestbikeday.ui.weather
+package com.maegankullenda.bestbikeday.ui.weather
 
 import app.cash.turbine.test
-import com.example.bestbikeday.data.Coordinates
-import com.example.bestbikeday.data.ForecastItem
-import com.example.bestbikeday.data.MainWeather
-import com.example.bestbikeday.data.Weather
-import com.example.bestbikeday.data.WeatherApi
-import com.example.bestbikeday.data.WeatherCity
-import com.example.bestbikeday.data.WeatherResponse
-import com.example.bestbikeday.data.Wind
+import com.maegankullenda.bestbikeday.data.Coordinates
+import com.maegankullenda.bestbikeday.data.ForecastItem
+import com.maegankullenda.bestbikeday.data.MainWeather
+import com.maegankullenda.bestbikeday.data.Weather
+import com.maegankullenda.bestbikeday.data.WeatherApi
+import com.maegankullenda.bestbikeday.data.WeatherCity
+import com.maegankullenda.bestbikeday.data.WeatherResponse
+import com.maegankullenda.bestbikeday.data.Wind
 import io.mockk.coEvery
 import io.mockk.mockk
 import java.io.IOException
@@ -50,20 +50,41 @@ class WeatherViewModelTest {
             list = listOf(
                 ForecastItem(
                     date = 1234567890L,
-                    main = MainWeather(25.0, 20.0, 30.0, 65),
-                    weather = listOf(Weather("Clear", "clear sky", "01d")),
-                    wind = Wind(5.0)
+                    main = MainWeather(
+                        temperature = 25.0,
+                        feelsLike = 26.0,
+                        tempMin = 20.0,
+                        tempMax = 30.0,
+                        pressure = 1013,
+                        seaLevel = 1013,
+                        groundLevel = 1013,
+                        humidity = 65,
+                        tempKf = 0.0
+                    ),
+                    weather = listOf(Weather(800, "Clear", "clear sky", "01d")),
+                    clouds = mapOf("all" to 0),
+                    wind = Wind(5.0, 180, 7.0),
+                    visibility = 10000,
+                    probabilityOfPrecipitation = 0.0,
+                    dateText = "2024-03-20 12:00:00"
                 )
             ),
-            city = WeatherCity("Cape Town", "ZA", Coordinates(-33.9249, 18.4241))
+            city = WeatherCity(
+                id = 1,
+                name = "Cape Town",
+                coordinates = Coordinates(lat = -33.9249, lon = 18.4241),
+                country = "ZA",
+                population = 3433441,
+                timezone = 7200
+            )
         )
 
         coEvery {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = any(),
                 lon = any(),
-                units = any(),
-                apiKey = any()
+                apiKey = any(),
+                units = any()
             )
         } returns mockResponse
 
@@ -81,7 +102,7 @@ class WeatherViewModelTest {
             val final = awaitItem()
             assertEquals("Cape Town", final.cityName)
             assertEquals(1, final.forecasts.size)
-            assertEquals(25.0, final.forecasts[0].main.temp, 0.001)
+            assertEquals(25.0, final.forecasts[0].main.temperature, 0.001)
             assertNull(final.error)
         }
     }
@@ -90,11 +111,11 @@ class WeatherViewModelTest {
     fun `loadWeatherForecast network error updates state correctly`() = runTest {
         // Given
         coEvery {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = any(),
                 lon = any(),
-                units = any(),
-                apiKey = any()
+                apiKey = any(),
+                units = any()
             )
         } throws IOException("Network error")
 

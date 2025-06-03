@@ -1,4 +1,4 @@
-package com.example.bestbikeday.ui.weather
+package com.maegankullenda.bestbikeday.ui.weather
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +34,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.bestbikeday.BuildConfig
-import com.example.bestbikeday.data.City
-import com.example.bestbikeday.data.ForecastItem
+import com.maegankullenda.bestbikeday.data.City
+import com.maegankullenda.bestbikeday.data.ForecastItem
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,7 +59,7 @@ fun WeatherScreen(
         viewModel.loadWeatherForecast(
             lat = city.lat,
             lon = city.lon,
-            apiKey = BuildConfig.OPENWEATHER_API_KEY
+            apiKey = "7057ebb4ab85723ae3109867380ec71b"
         )
     }
 

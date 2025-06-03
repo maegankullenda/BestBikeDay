@@ -1,4 +1,4 @@
-package com.example.bestbikeday.ui.weather
+package com.maegankullenda.bestbikeday.ui.weather
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
@@ -9,13 +9,16 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import com.example.bestbikeday.data.City
-import com.example.bestbikeday.data.ForecastItem
-import com.example.bestbikeday.data.MainWeather
-import com.example.bestbikeday.data.Weather
-import com.example.bestbikeday.data.WeatherApi
-import com.example.bestbikeday.data.Wind
-import com.example.bestbikeday.ui.theme.BestBikeDayTheme
+import com.maegankullenda.bestbikeday.data.City
+import com.maegankullenda.bestbikeday.data.Coordinates
+import com.maegankullenda.bestbikeday.data.ForecastItem
+import com.maegankullenda.bestbikeday.data.MainWeather
+import com.maegankullenda.bestbikeday.data.Weather
+import com.maegankullenda.bestbikeday.data.WeatherApi
+import com.maegankullenda.bestbikeday.data.WeatherCity
+import com.maegankullenda.bestbikeday.data.WeatherResponse
+import com.maegankullenda.bestbikeday.data.Wind
+import com.maegankullenda.bestbikeday.ui.theme.BestBikeDayTheme
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -44,25 +47,35 @@ class WeatherScreenTest {
     private val mockForecast = ForecastItem(
         date = System.currentTimeMillis() / 1000,
         main = MainWeather(
-            temp = 25.0,
+            temperature = 25.0,
+            feelsLike = 26.0,
             tempMin = 20.0,
             tempMax = 30.0,
-            humidity = 65
+            pressure = 1013,
+            seaLevel = 1013,
+            groundLevel = 1013,
+            humidity = 65,
+            tempKf = 0.0
         ),
         weather = listOf(
             Weather(
+                id = 800,
                 main = "Clear",
                 description = "clear sky",
                 icon = "01d"
             )
         ),
-        wind = Wind(speed = 5.0)
+        clouds = mapOf("all" to 0),
+        wind = Wind(speed = 5.0, degree = 180, gust = 7.0),
+        visibility = 10000,
+        probabilityOfPrecipitation = 0.0,
+        dateText = "2024-03-20 12:00:00"
     )
 
     @Before
     fun setup() {
         weatherApi = mockk<WeatherApi>()
-        viewModel = WeatherViewModel(weatherApi)
+        viewModel = WeatherViewModel()
 
         viewModelStoreOwner = mockk<androidx.lifecycle.ViewModelStoreOwner>().apply {
             every { viewModelStore } returns ViewModelStore()
@@ -90,7 +103,7 @@ class WeatherScreenTest {
     @Test
     fun weatherScreen_displaysLoadingState() = runTest {
         coEvery {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = any(),
                 lon = any(),
                 apiKey = any(),
@@ -108,7 +121,7 @@ class WeatherScreenTest {
             .onNodeWithText("Weather Forecast")
             .assertIsDisplayed()
         coVerify(atLeast = 1) {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
                 apiKey = any(),
@@ -133,21 +146,21 @@ class WeatherScreenTest {
     @Test
     fun weatherScreen_DisplaysWeatherData() = runTest {
         coEvery {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = any(),
                 lon = any(),
                 apiKey = any(),
                 units = any()
             )
-        } returns com.example.bestbikeday.data.WeatherResponse(
+        } returns WeatherResponse(
             list = listOf(mockForecast),
-            city = com.example.bestbikeday.data.WeatherCity(
+            city = WeatherCity(
+                id = 1,
                 name = "Cape Town",
+                coordinates = Coordinates(lat = -33.9249, lon = 18.4241),
                 country = "ZA",
-                coordinates = com.example.bestbikeday.data.Coordinates(
-                    lat = -33.9249,
-                    lon = 18.4241
-                )
+                population = 3433441,
+                timezone = 7200
             )
         )
 
@@ -159,7 +172,7 @@ class WeatherScreenTest {
         composeTestRule.onNodeWithText("20°").assertExists()
         composeTestRule.onNodeWithText("Wind: 5 km/h").assertExists()
         coVerify(atLeast = 1) {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
                 apiKey = any(),
@@ -172,7 +185,7 @@ class WeatherScreenTest {
     fun weatherScreen_DisplaysError() = runTest {
         val errorMessage = "Error message"
         coEvery {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = any(),
                 lon = any(),
                 apiKey = any(),
@@ -188,7 +201,7 @@ class WeatherScreenTest {
             .assertExists()
 
         coVerify(atLeast = 1) {
-            weatherApi.getWeatherForecast(
+            weatherApi.getForecast(
                 lat = mockCity.lat,
                 lon = mockCity.lon,
                 apiKey = any(),

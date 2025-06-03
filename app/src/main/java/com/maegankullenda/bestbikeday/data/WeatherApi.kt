@@ -1,7 +1,5 @@
-package com.example.bestbikeday.data
+package com.maegankullenda.bestbikeday.data
 
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
@@ -9,7 +7,7 @@ import retrofit2.http.Query
 
 interface WeatherApi {
     @GET("forecast")
-    suspend fun getWeatherForecast(
+    suspend fun getForecast(
         @Query("lat") lat: Double,
         @Query("lon") lon: Double,
         @Query("appid") apiKey: String,
@@ -20,14 +18,10 @@ interface WeatherApi {
 object WeatherApiClient {
     private const val BASE_URL = "https://api.openweathermap.org/data/2.5/"
 
-    fun create(): WeatherApi {
-        val moshi = Moshi.Builder()
-            .add(KotlinJsonAdapterFactory())
-            .build()
-
-        return Retrofit.Builder()
+    val weatherApi: WeatherApi by lazy {
+        Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .addConverterFactory(MoshiConverterFactory.create())
             .build()
             .create(WeatherApi::class.java)
     }

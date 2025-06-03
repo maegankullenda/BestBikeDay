@@ -1,4 +1,4 @@
-package com.example.bestbikeday.data
+package com.maegankullenda.bestbikeday.data
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -19,9 +19,12 @@ data class WeatherResponse(
  */
 @JsonClass(generateAdapter = true)
 data class WeatherCity(
+    @Json(name = "id") val id: Int,
     @Json(name = "name") val name: String,
+    @Json(name = "coord") val coordinates: Coordinates,
     @Json(name = "country") val country: String,
-    @Json(name = "coord") val coordinates: Coordinates
+    @Json(name = "population") val population: Int,
+    @Json(name = "timezone") val timezone: Int
 )
 
 /**
@@ -44,7 +47,11 @@ data class ForecastItem(
     @Json(name = "dt") val date: Long,
     @Json(name = "main") val main: MainWeather,
     @Json(name = "weather") val weather: List<Weather>,
-    @Json(name = "wind") val wind: Wind
+    @Json(name = "clouds") val clouds: Map<String, Int>,
+    @Json(name = "wind") val wind: Wind,
+    @Json(name = "visibility") val visibility: Int,
+    @Json(name = "pop") val probabilityOfPrecipitation: Double,
+    @Json(name = "dt_txt") val dateText: String
 )
 
 /**
@@ -54,10 +61,15 @@ data class ForecastItem(
  */
 @JsonClass(generateAdapter = true)
 data class MainWeather(
-    @Json(name = "temp") val temp: Double,
+    @Json(name = "temp") val temperature: Double,
+    @Json(name = "feels_like") val feelsLike: Double,
     @Json(name = "temp_min") val tempMin: Double,
     @Json(name = "temp_max") val tempMax: Double,
-    @Json(name = "humidity") val humidity: Int
+    @Json(name = "pressure") val pressure: Int,
+    @Json(name = "sea_level") val seaLevel: Int,
+    @Json(name = "grnd_level") val groundLevel: Int,
+    @Json(name = "humidity") val humidity: Int,
+    @Json(name = "temp_kf") val tempKf: Double
 )
 
 /**
@@ -68,6 +80,7 @@ data class MainWeather(
  */
 @JsonClass(generateAdapter = true)
 data class Weather(
+    @Json(name = "id") val id: Int,
     @Json(name = "main") val main: String,
     @Json(name = "description") val description: String,
     @Json(name = "icon") val icon: String
@@ -79,5 +92,7 @@ data class Weather(
  */
 @JsonClass(generateAdapter = true)
 data class Wind(
-    @Json(name = "speed") val speed: Double
+    @Json(name = "speed") val speed: Double,
+    @Json(name = "deg") val degree: Int,
+    @Json(name = "gust") val gust: Double
 )

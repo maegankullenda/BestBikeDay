@@ -1,12 +1,12 @@
-package com.example.bestbikeday.ui.settings
+package com.maegankullenda.bestbikeday.ui.settings
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.example.bestbikeday.data.City
-import com.example.bestbikeday.data.SouthAfricanCities
-import com.example.bestbikeday.ui.theme.BestBikeDayTheme
+import com.maegankullenda.bestbikeday.data.City
+import com.maegankullenda.bestbikeday.data.SouthAfricanCities
+import com.maegankullenda.bestbikeday.ui.theme.BestBikeDayTheme
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,7 +27,7 @@ class SettingsScreenTest {
 
         composeTestRule.waitForIdle()
         composeTestRule
-            .onNodeWithText("Weather Settings")
+            .onNodeWithText("Select a City")
             .assertIsDisplayed()
     }
 
@@ -43,7 +43,7 @@ class SettingsScreenTest {
 
         composeTestRule.waitForIdle()
         composeTestRule
-            .onNodeWithText(SouthAfricanCities.cities.first().name)
+            .onNodeWithText("Select a city")
             .assertIsDisplayed()
     }
 
@@ -59,7 +59,7 @@ class SettingsScreenTest {
 
         composeTestRule.waitForIdle()
         composeTestRule
-            .onNodeWithText("View Weather Forecast")
+            .onNodeWithText("Show Weather Forecast")
             .assertIsDisplayed()
     }
 
@@ -79,9 +79,20 @@ class SettingsScreenTest {
             }
         }
 
+        // Select a city first
         composeTestRule.waitForIdle()
         composeTestRule
-            .onNodeWithText("View Weather Forecast")
+            .onNodeWithText("Select a city")
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        composeTestRule
+            .onNodeWithText(SouthAfricanCities.cities.first().name)
+            .performClick()
+
+        composeTestRule.waitForIdle()
+        composeTestRule
+            .onNodeWithText("Show Weather Forecast")
             .performClick()
 
         assert(navigatedCity == SouthAfricanCities.cities.first())

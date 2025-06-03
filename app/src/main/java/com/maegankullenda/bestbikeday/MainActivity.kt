@@ -1,4 +1,4 @@
-package com.example.bestbikeday
+package com.maegankullenda.bestbikeday
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,10 +12,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.example.bestbikeday.data.City
-import com.example.bestbikeday.ui.settings.SettingsScreen
-import com.example.bestbikeday.ui.theme.BestBikeDayTheme
-import com.example.bestbikeday.ui.weather.WeatherScreen
+import com.maegankullenda.bestbikeday.data.City
+import com.maegankullenda.bestbikeday.ui.settings.SettingsScreen
+import com.maegankullenda.bestbikeday.ui.theme.BestBikeDayTheme
+import com.maegankullenda.bestbikeday.ui.weather.WeatherScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

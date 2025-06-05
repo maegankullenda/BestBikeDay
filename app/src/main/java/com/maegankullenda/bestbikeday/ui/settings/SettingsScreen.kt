@@ -108,7 +108,7 @@ fun SettingsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Button(
-                onClick = { if (numberOfDays < 5) numberOfDays++ },
+                onClick = { if (numberOfDays < 7) numberOfDays++ },
                 modifier = Modifier.padding(8.dp)
             ) {
                 Text("+")

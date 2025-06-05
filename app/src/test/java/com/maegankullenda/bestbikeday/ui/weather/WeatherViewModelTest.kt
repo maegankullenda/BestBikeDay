@@ -199,9 +199,9 @@ class WeatherViewModelTest {
     }
 
     @Test
-    fun `loadWeatherForecast limits to 5 days maximum`() = runTest {
-        // Given - Create forecasts for 6 different days
-        val mockForecasts = (0..5).map { dayOffset ->
+    fun `loadWeatherForecast limits to 7 days maximum`() = runTest {
+        // Given - Create forecasts for 8 different days
+        val mockForecasts = (0..7).map { dayOffset ->
             val timestamp = 1709596800L + (dayOffset * 86400) // Add one day each time
             createMockForecast(timestamp, 20.0 + dayOffset, 18.0 + dayOffset)
         }
@@ -238,10 +238,10 @@ class WeatherViewModelTest {
             assertTrue(loading.isLoading)
 
             val final = awaitItem()
-            assertEquals("Should limit to 5 days maximum", 5, final.forecasts.size)
+            assertEquals("Should limit to 7 days maximum", 7, final.forecasts.size)
 
             // Verify the temperatures increase by 1 degree each day
-            for (i in 0..4) {
+            for (i in 0..6) {
                 assertEquals(20.0 + i, final.forecasts[i].main.temperature, 0.1)
             }
         }

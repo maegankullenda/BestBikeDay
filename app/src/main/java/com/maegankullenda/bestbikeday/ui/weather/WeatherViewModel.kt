@@ -48,7 +48,7 @@ class WeatherViewModel(
                         // Take the forecast from the middle of the day (around noon)
                         forecasts[forecasts.size / 2]
                     }
-                    .take(5) // Ensure we only take 5 days max
+                    .take(7) // Allow up to 7 days of forecast
 
                 _uiState.update {
                     it.copy(

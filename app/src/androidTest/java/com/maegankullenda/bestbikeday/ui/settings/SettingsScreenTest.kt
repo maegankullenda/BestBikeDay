@@ -98,4 +98,33 @@ class SettingsScreenTest {
         assert(navigatedCity == SouthAfricanCities.cities.first())
         assert(navigatedDays == 5) // Default value
     }
+
+    @Test
+    fun settingsScreen_allowsUpToSevenDays() {
+        var navigatedDays = 0
+
+        composeTestRule.setContent {
+            BestBikeDayTheme {
+                SettingsScreen(
+                    onNavigateToWeather = { _, days ->
+                        navigatedDays = days
+                    }
+                )
+            }
+        }
+
+        // Click the + button twice to increase from default 5 to 7
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("+").performClick()
+        composeTestRule.onNodeWithText("+").performClick()
+
+        // Select a city to enable navigation
+        composeTestRule.onNodeWithText("Select a city").performClick()
+        composeTestRule.onNodeWithText(SouthAfricanCities.cities.first().name).performClick()
+
+        // Click the weather forecast button
+        composeTestRule.onNodeWithText("Show Weather Forecast").performClick()
+
+        assert(navigatedDays == 7) // Should allow up to 7 days
+    }
 }

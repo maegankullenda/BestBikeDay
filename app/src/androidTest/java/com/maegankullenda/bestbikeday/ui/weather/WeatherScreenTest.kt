@@ -1,6 +1,7 @@
 package com.maegankullenda.bestbikeday.ui.weather
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -23,6 +24,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -211,6 +216,71 @@ class WeatherScreenTest {
                 apiKey = any(),
                 units = any()
             )
+        }
+    }
+
+    @Test
+    fun weatherScreen_DisplaysSevenDaysWhenSelected() = runTest {
+        // Create 7 days of mock forecasts
+        val mockForecasts = (0..6).map { dayOffset ->
+            val timestamp = System.currentTimeMillis() / 1000 + (dayOffset * 86400) // Add one day each time
+            mockForecast.copy(
+                date = timestamp,
+                main = mockForecast.main.copy(
+                    temperature = 25.0 + dayOffset,
+                    tempMax = 30.0 + dayOffset,
+                    tempMin = 20.0 + dayOffset
+                )
+            )
+        }
+
+        val mockResponse = WeatherResponse(
+            list = mockForecasts,
+            city = WeatherCity(
+                id = 1,
+                name = "Cape Town",
+                coordinates = Coordinates(lat = -33.9249, lon = 18.4241),
+                country = "ZA",
+                population = 3433441,
+                timezone = 7200
+            )
+        )
+
+        coEvery {
+            weatherApi.getForecast(
+                lat = any(),
+                lon = any(),
+                apiKey = any(),
+                units = any()
+            )
+        } returns mockResponse
+
+        // Launch with 7 days selected
+        composeTestRule.setContent {
+            BestBikeDayTheme {
+                CompositionLocalProvider(
+                    LocalViewModelStoreOwner provides viewModelStoreOwner
+                ) {
+                    WeatherScreen(
+                        city = mockCity,
+                        numberOfDays = 7, // Request 7 days
+                        onBackClick = {},
+                        viewModel = viewModel
+                    )
+                }
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // Verify all 7 days are displayed
+        mockForecasts.forEachIndexed { index, forecast ->
+            val dateFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).apply {
+                timeZone = TimeZone.getDefault()
+            }
+            val expectedDate = dateFormat.format(Date(forecast.date * 1000))
+            composeTestRule.onNodeWithText(expectedDate).assertExists()
+            composeTestRule.onNodeWithText("${(30.0 + index).toInt()}°").assertExists() // Max temp
+            composeTestRule.onNodeWithText("${(20.0 + index).toInt()}°").assertExists() // Min temp
         }
     }
 }

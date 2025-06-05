@@ -61,8 +61,8 @@ android {
         applicationId = "com.maegankullenda.bestbikeday"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments += mapOf(
@@ -154,6 +154,31 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    lint {
+        warningsAsErrors = true
+        abortOnError = true
+        checkReleaseBuilds = true
+        checkDependencies = true
+        checkAllWarnings = true
+        ignoreWarnings = false
+        // Enforce our specific rules
+        error += listOf(
+            "HardcodedText",
+            "SpUsage",
+            "IconDuplicatesConfig",
+            "IconDensities",
+            "InvalidPackage",
+            "MissingTranslation",
+            "StringFormatInvalid",
+            "UnusedResources"
+        )
+        disable += listOf(
+            "InvalidPackage", // Some libraries have invalid packages
+            "ObsoleteLintCustomCheck" // Disable obsolete lint checks
+        )
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 dependencies {
@@ -171,12 +196,12 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
 
     // OkHttp for networking
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // Moshi for JSON parsing
-    implementation("com.squareup.moshi:moshi:1.14.0")
-    implementation("com.squareup.moshi:moshi-kotlin:1.14.0")
+    implementation("com.squareup.moshi:moshi:1.15.2")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -184,17 +209,17 @@ dependencies {
 
     // Testing Dependencies
     testImplementation(libs.junit)
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("app.cash.turbine:turbine:1.0.0") // For Flow testing
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     // Android Testing
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     androidTestImplementation("io.mockk:mockk-android:1.13.8")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")

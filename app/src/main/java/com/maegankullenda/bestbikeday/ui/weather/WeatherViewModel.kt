@@ -30,11 +30,31 @@ class WeatherViewModel(
         viewModelScope.launch {
             try {
                 val response = weatherApi.getForecast(lat, lon, apiKey)
+
+                // Group forecasts by day and take the middle forecast for each day
+                val dailyForecasts = response.list
+                    .groupBy { forecast ->
+                        // Convert Unix timestamp to day start (midnight)
+                        val date = java.util.Date(forecast.date * 1000)
+                        val calendar = java.util.Calendar.getInstance()
+                        calendar.time = date
+                        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                        calendar.set(java.util.Calendar.MINUTE, 0)
+                        calendar.set(java.util.Calendar.SECOND, 0)
+                        calendar.set(java.util.Calendar.MILLISECOND, 0)
+                        calendar.timeInMillis
+                    }
+                    .map { (_, forecasts) ->
+                        // Take the forecast from the middle of the day (around noon)
+                        forecasts[forecasts.size / 2]
+                    }
+                    .take(5) // Ensure we only take 5 days max
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         cityName = response.city.name,
-                        forecasts = response.list,
+                        forecasts = dailyForecasts,
                         error = null
                     )
                 }

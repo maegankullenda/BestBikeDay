@@ -39,6 +39,7 @@ import com.maegankullenda.bestbikeday.data.ForecastItem
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 // Define colors
 private val SkyBlue = Color(0xFF87CEEB)
@@ -153,7 +154,10 @@ fun WeatherCard(
             Column(
                 horizontalAlignment = Alignment.Start
             ) {
-                val dateFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
+                // Use a more specific date format that includes the day of the week
+                val dateFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).apply {
+                    timeZone = TimeZone.getDefault()
+                }
                 Text(
                     text = dateFormat.format(Date(forecast.date * 1000)),
                     style = MaterialTheme.typography.titleMedium,

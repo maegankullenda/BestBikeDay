@@ -1,7 +1,6 @@
 package com.maegankullenda.bestbikeday.ui.weather
 
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -278,9 +277,9 @@ class WeatherScreenTest {
                 timeZone = TimeZone.getDefault()
             }
             val expectedDate = dateFormat.format(Date(forecast.date * 1000))
-            composeTestRule.onNodeWithText(expectedDate).assertExists()
-            composeTestRule.onNodeWithText("${(30.0 + index).toInt()}°").assertExists() // Max temp
-            composeTestRule.onNodeWithText("${(20.0 + index).toInt()}°").assertExists() // Min temp
+            composeTestRule.onNodeWithText(expectedDate).assertIsDisplayed()
+            composeTestRule.onNodeWithText("${(30.0 + index).toInt()}°").assertIsDisplayed() // Max temp
+            composeTestRule.onNodeWithText("${(20.0 + index).toInt()}°").assertIsDisplayed() // Min temp
         }
     }
 }

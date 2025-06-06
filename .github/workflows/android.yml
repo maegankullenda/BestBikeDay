@@ -63,7 +63,7 @@ jobs:
     name: Run UI Tests
     runs-on: macos-latest
     needs: lint
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
 
@@ -79,6 +79,9 @@ jobs:
           echo "OPENWEATHER_API_KEY_DEBUG=${{ secrets.OPENWEATHER_API_KEY_DEBUG }}" > local.properties
           echo "OPENWEATHER_API_KEY_RELEASE=${{ secrets.OPENWEATHER_API_KEY_RELEASE }}" >> local.properties
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -89,8 +92,14 @@ jobs:
           target: ${{ env.TARGET }}
           arch: ${{ env.ARCH }}
           profile: Nexus 6
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: |
             adb logcat > emulator.log &
+            adb shell settings put global window_animation_scale 0.0
+            adb shell settings put global transition_animation_scale 0.0
+            adb shell settings put global animator_duration_scale 0.0
             ./gradlew connectedCheck
 
       - name: Upload UI Test Results

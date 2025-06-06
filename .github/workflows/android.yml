@@ -133,6 +133,15 @@ jobs:
           echo "debug.hwui.renderer=skiagl" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.gps=no" >> ~/.android/avd/test_device.avd/config.ini
 
+          # Additional optimizations
+          echo "hw.useext4=yes" >> ~/.android/avd/test_device.avd/config.ini
+          echo "disk.cachePartition=yes" >> ~/.android/avd/test_device.avd/config.ini
+          echo "disk.cachePartition.size=66MB" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.mainKeys=no" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.trackBall=no" >> ~/.android/avd/test_device.avd/config.ini
+          echo "runtime.network.latency=none" >> ~/.android/avd/test_device.avd/config.ini
+          echo "runtime.network.speed=full" >> ~/.android/avd/test_device.avd/config.ini
+
       - name: Configure ADB
         run: |
           # Kill any existing ADB server
@@ -173,6 +182,9 @@ jobs:
             -accel off
             -no-audio
             -netfast
+            -no-metrics
+            -wipe-data
+            -partition-size 4096
           script: |
             # Kill and restart ADB to ensure clean state
             adb kill-server || true
@@ -182,7 +194,7 @@ jobs:
 
             # Wait for emulator to start with increased timeout
             adb wait-for-device
-            sleep 20
+            sleep 30
 
             # More robust boot completion check with longer timeout
             timeout=1200
@@ -197,6 +209,7 @@ jobs:
               
               if [[ $elapsed -ge $timeout ]]; then
                 echo "Timeout waiting for boot completion"
+                adb shell getprop
                 exit 1
               fi
               
@@ -204,6 +217,13 @@ jobs:
               adb devices
               bootanim=$(adb shell getprop init.svc.bootanim 2>&1 || echo "unknown")
               echo "Boot animation status: $bootanim"
+              
+              # Print more diagnostic information
+              echo "Device state:"
+              adb shell getprop sys.boot_completed
+              adb shell getprop dev.bootcomplete
+              adb shell getprop service.bootanim.exit
+              adb shell ps
               sleep 10
             done
 
@@ -228,6 +248,8 @@ jobs:
               adb devices
               adb shell getprop sys.boot_completed
               adb shell ps
+              adb shell df
+              adb shell top -n 1
               
               if ./gradlew connectedCheck --debug --stacktrace; then
                 echo "Tests completed successfully"
@@ -238,6 +260,8 @@ jobs:
                   echo "Waiting before retry..."
                   adb devices
                   adb shell ps
+                  adb shell df
+                  adb shell top -n 1
                   sleep 30
                 fi
               fi

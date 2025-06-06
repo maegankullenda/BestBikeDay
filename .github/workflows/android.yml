@@ -11,7 +11,7 @@ env:
   JAVA_DISTRIBUTION: "temurin"
   API_LEVEL: "31"
   TARGET: "google_apis"
-  ARCH: "arm64-v8a"
+  ARCH: "x86_64"
   CMD_TIMEOUT: "600"
 
 jobs:
@@ -91,14 +91,14 @@ jobs:
             "platform-tools" \
             "platforms;android-31" \
             "emulator" \
-            "system-images;android-31;google_apis;arm64-v8a"
+            "system-images;android-31;google_apis;x86_64"
 
-      - name: Create and Configure AVD
+      - name: Create AVD and modify config
         run: |
           echo "no" | avdmanager create avd \
             --force \
             --name "test_device" \
-            --package "system-images;android-31;google_apis;arm64-v8a" \
+            --package "system-images;android-31;google_apis;x86_64" \
             --device "pixel_6"
 
           echo "hw.cpu.ncore=2" >> ~/.android/avd/test_device.avd/config.ini
@@ -139,10 +139,12 @@ jobs:
 
             # Verify boot completed
             bootanim=""
-            until [[ "$bootanim" =~ "stopped" ]]; do
+            failCounter=0
+            until [[ "$bootanim" =~ "stopped" ]] || [[ $failCounter -gt 10 ]]; do
               bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1 &)
-              echo "Waiting for boot animation to complete..."
-              sleep 5
+              echo "Waiting for boot animation to complete... (attempt $failCounter)"
+              sleep 10
+              ((failCounter++))
             done
 
             # Start logcat capture

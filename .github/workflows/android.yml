@@ -104,28 +104,46 @@ jobs:
             --package "system-images;android-31;google_apis;x86_64" \
             --device "pixel_6"
 
+          # Basic hardware configuration
           echo "hw.cpu.ncore=1" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.ramSize=2048" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
           echo "disk.dataPartition.size=2048M" >> ~/.android/avd/test_device.avd/config.ini
+
+          # Hardware acceleration settings
           echo "hw.keyboard=yes" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.gpu.enabled=yes" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.gpu.mode=swiftshader_indirect" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.accelerometer=no" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.videoInput=no" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.audioInput=no" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.audioOutput=no" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.camera.back=none" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.camera.front=none" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.arc=false" >> ~/.android/avd/test_device.avd/config.ini
+
+          # Disable unnecessary features
           echo "hw.sensors.proximity=no" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.sensors.magnetic_field=no" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.sensors.orientation=no" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.sensors.temperature=no" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.arc=false" >> ~/.android/avd/test_device.avd/config.ini
+
+          # Performance settings
+          echo "hw.lcd.vsync=false" >> ~/.android/avd/test_device.avd/config.ini
+          echo "debug.hwui.renderer=skiagl" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.gps=no" >> ~/.android/avd/test_device.avd/config.ini
 
       - name: Configure ADB
         run: |
+          # Kill any existing ADB server
           adb kill-server || true
           sleep 5
-          adb start-server
+
+          # Start ADB server with specific port
+          adb -P 5037 start-server
+          sleep 2
+
+          # Verify ADB is running
           adb devices
 
       - name: Grant execute permission for gradlew
@@ -151,25 +169,29 @@ jobs:
             -camera-back none
             -no-snapshot
             -memory 2048
-            -no-accel
             -cores 1
+            -accel off
             -no-audio
+            -netfast
           script: |
             # Kill and restart ADB to ensure clean state
             adb kill-server || true
             sleep 5
-            adb start-server
+            adb -P 5037 start-server
+            sleep 2
 
             # Wait for emulator to start with increased timeout
             adb wait-for-device
-            sleep 10
+            sleep 20
 
             # More robust boot completion check with longer timeout
             timeout=1200
             start_time=$(date +%s)
             bootanim=""
 
-            until [[ "$(adb shell getprop sys.boot_completed 2>&1)" == "1" ]] || [[ "$(adb shell getprop dev.bootcomplete 2>&1)" == "1" ]]; do
+            until [[ "$(adb shell getprop sys.boot_completed 2>&1)" == "1" ]] || \
+                  [[ "$(adb shell getprop dev.bootcomplete 2>&1)" == "1" ]] || \
+                  [[ "$(adb shell getprop service.bootanim.exit 2>&1)" == "1" ]]; do
               current_time=$(date +%s)
               elapsed=$((current_time - start_time))
               
@@ -205,8 +227,9 @@ jobs:
               # Check device state before running tests
               adb devices
               adb shell getprop sys.boot_completed
+              adb shell ps
               
-              if ./gradlew connectedCheck --debug; then
+              if ./gradlew connectedCheck --debug --stacktrace; then
                 echo "Tests completed successfully"
                 exit 0
               else
@@ -214,6 +237,7 @@ jobs:
                 if [[ $i -lt $max_retries ]]; then
                   echo "Waiting before retry..."
                   adb devices
+                  adb shell ps
                   sleep 30
                 fi
               fi

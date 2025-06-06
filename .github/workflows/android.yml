@@ -84,26 +84,28 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK and Create AVD
+      - name: Install Android SDK Components
         run: |
-          # Accept all SDK licenses
-          yes | sdkmanager --licenses
+          echo "y" | sdkmanager --install \
+            "build-tools;34.0.0" \
+            "platform-tools" \
+            "platforms;android-31" \
+            "emulator" \
+            "system-images;android-31;google_apis;arm64-v8a"
 
-          # Install required SDK components
-          sdkmanager "platform-tools" "platforms;android-${{ env.API_LEVEL }}" "build-tools;34.0.0"
-          sdkmanager "system-images;android-${{ env.API_LEVEL }};${{ env.TARGET }};${{ env.ARCH }}"
+      - name: Create and Configure AVD
+        run: |
+          echo "no" | avdmanager create avd \
+            --force \
+            --name "test_device" \
+            --package "system-images;android-31;google_apis;arm64-v8a" \
+            --device "pixel_6"
 
-          # Create AVD with specific CPU cores and memory
-          echo "no" | avdmanager create avd -n test_device \
-            -k "system-images;android-${{ env.API_LEVEL }};${{ env.TARGET }};${{ env.ARCH }}" \
-            -d "pixel_6" \
-            --force
-
-          # Configure AVD settings
-          echo "hw.cpu.ncore=4" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.ramSize=4096" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.cpu.ncore=2" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.ramSize=2048" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
-          echo "disk.dataPartition.size=6G" >> ~/.android/avd/test_device.avd/config.ini
+          echo "disk.dataPartition.size=2048M" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.keyboard=yes" >> ~/.android/avd/test_device.avd/config.ini
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -116,6 +118,9 @@ jobs:
           arch: ${{ env.ARCH }}
           avd-name: test_device
           force-avd-creation: false
+          cores: 2
+          ram-size: 2048M
+          emulator-boot-timeout: 600
           emulator-options: >-
             -no-snapshot-save
             -no-window
@@ -124,14 +129,21 @@ jobs:
             -no-boot-anim
             -camera-back none
             -no-snapshot
-            -memory 4096
-            -accel off
-            -no-accel
-            -engine qemu2
+            -memory 2048
           disable-animations: true
+          disable-spellchecker: true
           script: |
             # Wait for emulator to start
-            $ANDROID_HOME/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+            adb wait-for-device
+            adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 3; done'
+
+            # Verify boot completed
+            bootanim=""
+            until [[ "$bootanim" =~ "stopped" ]]; do
+              bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1 &)
+              echo "Waiting for boot animation to complete..."
+              sleep 5
+            done
 
             # Start logcat capture
             adb logcat > emulator.log &

@@ -31,5 +31,14 @@ jobs:
       - name: Run ktlint check
         run: ./gradlew ktlintCheck
 
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Run Unit Tests
+        run: ./gradlew test
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk

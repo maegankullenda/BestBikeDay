@@ -61,9 +61,11 @@ jobs:
 
   ui-test:
     name: Run UI Tests
-    runs-on: macos-14
+    runs-on: macos-13
     needs: lint
     timeout-minutes: 60
+    env:
+      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 60
     steps:
       - uses: actions/checkout@v3
 
@@ -91,11 +93,17 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-${{ env.API_LEVEL }}" "build-tools;34.0.0"
           sdkmanager "system-images;android-${{ env.API_LEVEL }};${{ env.TARGET }};${{ env.ARCH }}"
 
-          # Create AVD
+          # Create AVD with specific CPU cores and memory
           echo "no" | avdmanager create avd -n test_device \
             -k "system-images;android-${{ env.API_LEVEL }};${{ env.TARGET }};${{ env.ARCH }}" \
             -d "pixel_6" \
             --force
+
+          # Configure AVD settings
+          echo "hw.cpu.ncore=4" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.ramSize=4096" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
+          echo "disk.dataPartition.size=6G" >> ~/.android/avd/test_device.avd/config.ini
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -116,11 +124,14 @@ jobs:
             -no-boot-anim
             -camera-back none
             -no-snapshot
-            -memory 2048
+            -memory 4096
+            -accel off
+            -no-accel
+            -engine qemu2
           disable-animations: true
           script: |
-            # Wait for boot completion
-            adb wait-for-device
+            # Wait for emulator to start
+            $ANDROID_HOME/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
 
             # Start logcat capture
             adb logcat > emulator.log &

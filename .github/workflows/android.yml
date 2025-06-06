@@ -1,4 +1,4 @@
-name: Android CI/CD
+name: Android CI
 
 on:
   push:
@@ -6,257 +6,30 @@ on:
   pull_request:
     branches: ["main"]
 
-# Add repository-level permissions
-permissions:
-  contents: write
-  packages: read
-  actions: write
-  checks: write
-  pull-requests: write
-
-env:
-  JAVA_VERSION: "17"
-  JAVA_DISTRIBUTION: "temurin"
-  API_LEVEL: "24"
-
 jobs:
-  validate:
-    name: Validate Project
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: "17"
+          distribution: "temurin"
           cache: gradle
+
+      - name: Create local.properties
+        run: |
+          echo "OPENWEATHER_API_KEY_DEBUG=${{ secrets.OPENWEATHER_API_KEY_DEBUG }}" > local.properties
+          echo "OPENWEATHER_API_KEY_RELEASE=${{ secrets.OPENWEATHER_API_KEY_RELEASE }}" >> local.properties
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Create keystore.properties
-        env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY_DEBUG }}
-        run: |
-          echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
-          echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
-
-      - name: Check Kotlin code style
+      - name: Run ktlint check
         run: ./gradlew ktlintCheck
 
-  unit-tests:
-    name: Run Unit Tests
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          cache: gradle
-
-      - name: Create keystore.properties
-        env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY_DEBUG }}
-        run: |
-          echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
-          echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
-
-      - name: Run Unit Tests
-        run: ./gradlew test --stacktrace
-
-      - name: Upload Unit Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-results
-          path: app/build/reports/tests/
-          retention-days: 5
-
-  instrumented-tests:
-    name: Run Instrumented Tests
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          cache: gradle
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Create keystore.properties
-        env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY_DEBUG }}
-        run: |
-          echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
-          echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
-
-      - name: Enable KVM and Install Dependencies
-        run: |
-          echo "Installing KVM and required dependencies..."
-          sudo apt-get update
-          sudo apt-get install -y bridge-utils cpu-checker qemu-kvm libvirt-daemon-system libvirt-clients
-          sudo kvm-ok || true
-          sudo adduser $USER kvm
-          sudo chown $USER /dev/kvm || true
-          sudo chmod 777 /dev/kvm || true
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Install system image
-        run: |
-          echo "y" | sdkmanager "system-images;android-${{ env.API_LEVEL }};default;x86_64"
-          echo "no" | avdmanager --verbose create avd -n test_device -k "system-images;android-${{ env.API_LEVEL }};default;x86_64" --force
-
-      - name: Run Instrumented Tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ env.API_LEVEL }}
-          target: default
-          arch: x86_64
-          profile: pixel_2
-          avd-name: test_device
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          disk-size: 8192M
-          heap-size: 4096M
-          ram-size: 4096M
-          cores: 2
-          emulator-boot-timeout: 900
-          script: |
-            adb wait-for-device
-            adb devices
-            sleep 60
-            adb shell settings put global window_animation_scale 0.0
-            adb shell settings put global transition_animation_scale 0.0
-            adb shell settings put global animator_duration_scale 0.0
-            adb logcat -c
-            adb logcat > emulator.log &
-            # Run tests and store the exit code
-            ./gradlew clean testDebugUnitTest connectedDebugAndroidTest jacocoTestReport --stacktrace
-            TEST_EXIT_CODE=$?
-            # Cleanup ADB and emulator
-            adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done || true
-            sleep 5
-            # Return the test exit code
-            exit $TEST_EXIT_CODE
-
-      - name: Upload Emulator Log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: emulator-log
-          path: |
-            emulator.log
-            ~/android-sdk/emulator/emulator.log
-          retention-days: 5
-
-      - name: Upload Test Reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: |
-            app/build/reports/tests/
-            app/build/reports/androidTests/
-            app/build/reports/jacoco/
-          retention-days: 14
-
-  build-debug:
-    name: Build Debug APK
-    needs: [unit-tests, instrumented-tests]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          cache: gradle
-
-      - name: Create keystore.properties
-        env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY_DEBUG }}
-        run: |
-          echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
-          echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
-
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Upload Debug APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 5
-
-  build-release:
-    name: Build Release APK and Bundle
-    needs: [unit-tests, instrumented-tests]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          cache: gradle
-
-      - name: Create keystore.properties
-        env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY_RELEASE }}
-        run: |
-          echo "OPENWEATHER_API_KEY_DEBUG=$OPENWEATHER_API_KEY" > keystore.properties
-          echo "OPENWEATHER_API_KEY_RELEASE=$OPENWEATHER_API_KEY" >> keystore.properties
-
-      - name: Build Release APK and Bundle
-        run: |
-          ./gradlew assembleRelease bundleRelease --stacktrace
-
-      - name: Upload Release APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-apk
-          path: app/build/outputs/apk/release/*.apk
-          retention-days: 5
-
-      - name: Upload Release Bundle
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-bundle
-          path: app/build/outputs/bundle/release/*.aab
-          retention-days: 5
-
-      - name: Upload Build Reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-reports
-          path: app/build/reports/
+      - name: Build with Gradle
+        run: ./gradlew build

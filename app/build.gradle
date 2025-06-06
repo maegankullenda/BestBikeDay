@@ -5,16 +5,6 @@ plugins {
     id 'kotlin-kapt'
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def weatherApiKey = localProperties.getProperty('OPENWEATHER_API_KEY') ?: "\"your_api_key_here\""
-
 android {
     namespace 'com.maegankullenda.bestbikeday'
     compileSdk 34
@@ -36,18 +26,18 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "WEATHER_API_KEY", "\"${weatherApiKey}\""
+            buildConfigField "String", "WEATHER_API_KEY", getOpenWeatherApiKey("OPENWEATHER_API_KEY_RELEASE")
         }
         debug {
-            buildConfigField "String", "WEATHER_API_KEY", "\"${weatherApiKey}\""
+            buildConfigField "String", "WEATHER_API_KEY", getOpenWeatherApiKey("OPENWEATHER_API_KEY_DEBUG")
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = '1.8'
     }
     buildFeatures {
         compose true
@@ -65,6 +55,19 @@ android {
         baseline = file("lint-baseline.xml")
         abortOnError = false
     }
+}
+
+def getOpenWeatherApiKey(String propertyName) {
+    def properties = new Properties()
+    def propertiesFile = rootProject.file('local.properties')
+    def apiKey = "your_api_key_here"
+    
+    if (propertiesFile.exists()) {
+        properties.load(propertiesFile.newDataInputStream())
+        apiKey = properties.getProperty(propertyName) ?: apiKey
+    }
+    
+    return "\"$apiKey\""
 }
 
 dependencies {

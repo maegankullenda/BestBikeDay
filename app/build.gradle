@@ -60,6 +60,13 @@ android {
         unitTests {
             includeAndroidResources = true
             returnDefaultValues = true
+            all {
+                if (name.contains("Debug")) {
+                    systemProperty 'robolectric.graphicsMode', 'NATIVE'
+                    systemProperty 'robolectric.dependency.repo.url', 'https://repo1.maven.org/maven2'
+                    systemProperty 'robolectric.dependency.repo.id', 'mavenCentral'
+                }
+            }
         }
         animationsDisabled = true
     }

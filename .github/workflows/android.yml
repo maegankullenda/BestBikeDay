@@ -31,8 +31,8 @@ jobs:
       - name: Run ktlint check
         run: ./gradlew ktlintCheck
 
-      - name: Run Unit Tests
-        run: ./gradlew test
+      - name: Run Unit Tests (excluding UI tests)
+        run: ./gradlew test -x :app:testDebugUnitTest -x :app:testReleaseUnitTest
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug

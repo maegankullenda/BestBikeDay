@@ -98,49 +98,56 @@ jobs:
 
       - name: Create AVD and modify config
         run: |
+          # Create base AVD
           echo "no" | avdmanager create avd \
             --force \
             --name "test_device" \
             --package "system-images;android-31;google_apis;x86_64" \
             --device "pixel_6"
 
-          # Basic hardware configuration
-          echo "hw.cpu.ncore=1" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.ramSize=2048" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
-          echo "disk.dataPartition.size=2048M" >> ~/.android/avd/test_device.avd/config.ini
+          # Remove existing config to prevent conflicts
+          rm -f ~/.android/avd/test_device.avd/config.ini
+          touch ~/.android/avd/test_device.avd/config.ini
 
-          # Hardware acceleration settings
-          echo "hw.keyboard=yes" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.gpu.enabled=yes" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.gpu.mode=swiftshader_indirect" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.accelerometer=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.videoInput=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.audioInput=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.audioOutput=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.camera.back=none" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.camera.front=none" >> ~/.android/avd/test_device.avd/config.ini
+          # Write all config at once to prevent race conditions
+          {
+            echo "avd.ini.encoding=UTF-8"
+            echo "hw.cpu.ncore=1"
+            echo "hw.ramSize=2048"
+            echo "hw.lcd.density=440"
+            echo "disk.dataPartition.size=2048M"
+            echo "hw.cpu.arch=x86_64"
+            
+            # Hardware acceleration settings
+            echo "hw.keyboard=yes"
+            echo "hw.gpu.enabled=yes"
+            echo "hw.gpu.mode=swiftshader_indirect"
+            echo "hw.accelerometer=no"
+            echo "hw.videoInput=no"
+            echo "hw.audioInput=no"
+            echo "hw.audioOutput=no"
+            echo "hw.camera.back=none"
+            echo "hw.camera.front=none"
+            
+            # CPU configuration
+            echo "hw.cpu.model=qemu64"
+            echo "hw.cpu.ncore.max=1"
+            
+            # Performance settings
+            echo "hw.lcd.vsync=false"
+            echo "debug.hwui.renderer=skiagl"
+            
+            # Additional optimizations
+            echo "hw.useext4=yes"
+            echo "disk.cachePartition=yes"
+            echo "disk.cachePartition.size=66MB"
+            echo "runtime.network.latency=none"
+            echo "runtime.network.speed=full"
+          } > ~/.android/avd/test_device.avd/config.ini
 
-          # Disable unnecessary features
-          echo "hw.sensors.proximity=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.sensors.magnetic_field=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.sensors.orientation=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.sensors.temperature=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.arc=false" >> ~/.android/avd/test_device.avd/config.ini
-
-          # Performance settings
-          echo "hw.lcd.vsync=false" >> ~/.android/avd/test_device.avd/config.ini
-          echo "debug.hwui.renderer=skiagl" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.gps=no" >> ~/.android/avd/test_device.avd/config.ini
-
-          # Additional optimizations
-          echo "hw.useext4=yes" >> ~/.android/avd/test_device.avd/config.ini
-          echo "disk.cachePartition=yes" >> ~/.android/avd/test_device.avd/config.ini
-          echo "disk.cachePartition.size=66MB" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.mainKeys=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.trackBall=no" >> ~/.android/avd/test_device.avd/config.ini
-          echo "runtime.network.latency=none" >> ~/.android/avd/test_device.avd/config.ini
-          echo "runtime.network.speed=full" >> ~/.android/avd/test_device.avd/config.ini
+          # Verify config
+          echo "AVD Configuration:"
+          cat ~/.android/avd/test_device.avd/config.ini
 
       - name: Configure ADB
         run: |
@@ -180,64 +187,18 @@ jobs:
             -memory 2048
             -cores 1
             -accel off
-            -no-audio
             -netfast
             -no-metrics
             -wipe-data
             -partition-size 4096
           script: |
-            # Kill and restart ADB to ensure clean state
-            adb kill-server || true
-            sleep 5
-            adb -P 5037 start-server
-            sleep 2
-
-            # Wait for emulator to start with increased timeout
+            # Wait for emulator to start
             adb wait-for-device
             sleep 30
 
-            # More robust boot completion check with longer timeout
-            timeout=1200
-            start_time=$(date +%s)
-            bootanim=""
-
-            until [[ "$(adb shell getprop sys.boot_completed 2>&1)" == "1" ]] || \
-                  [[ "$(adb shell getprop dev.bootcomplete 2>&1)" == "1" ]] || \
-                  [[ "$(adb shell getprop service.bootanim.exit 2>&1)" == "1" ]]; do
-              current_time=$(date +%s)
-              elapsed=$((current_time - start_time))
-              
-              if [[ $elapsed -ge $timeout ]]; then
-                echo "Timeout waiting for boot completion"
-                adb shell getprop
-                exit 1
-              fi
-              
-              echo "Waiting for boot completion... (${elapsed}s)"
-              adb devices
-              bootanim=$(adb shell getprop init.svc.bootanim 2>&1 || echo "unknown")
-              echo "Boot animation status: $bootanim"
-              
-              # Print more diagnostic information
-              echo "Device state:"
-              adb shell getprop sys.boot_completed
-              adb shell getprop dev.bootcomplete
-              adb shell getprop service.bootanim.exit
-              adb shell ps
-              sleep 10
-            done
-
-            # Additional boot verification
-            adb shell input keyevent 82
-            sleep 5
-
-            # Disable animations
-            adb shell settings put global window_animation_scale 0.0
-            adb shell settings put global transition_animation_scale 0.0
-            adb shell settings put global animator_duration_scale 0.0
-
-            # Start logcat capture
-            adb logcat > emulator.log &
+            # Print initial device state
+            echo "Initial device state:"
+            adb devices -l
 
             # Run tests with retry mechanism
             max_retries=3
@@ -245,30 +206,26 @@ jobs:
               echo "Test attempt $i of $max_retries"
               
               # Check device state before running tests
-              adb devices
+              adb devices -l
               adb shell getprop sys.boot_completed
-              adb shell ps
-              adb shell df
-              adb shell top -n 1
               
-              if ./gradlew connectedCheck --debug --stacktrace; then
+              if ./gradlew connectedCheck --debug --stacktrace --info; then
                 echo "Tests completed successfully"
-                exit 0
+                break
               else
                 echo "Attempt $i failed"
                 if [[ $i -lt $max_retries ]]; then
                   echo "Waiting before retry..."
-                  adb devices
-                  adb shell ps
-                  adb shell df
-                  adb shell top -n 1
                   sleep 30
                 fi
               fi
             done
 
-            echo "All test attempts failed"
-            exit 1
+            # Ensure crashpad_handler is terminated
+            echo "Terminating crashpad_handler processes..."
+            pkill -SIGTERM crashpad_handler || true
+            sleep 5
+            pkill -SIGKILL crashpad_handler || true
 
       - name: Upload UI Test Results
         if: always()

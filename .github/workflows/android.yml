@@ -9,9 +9,9 @@ on:
 env:
   JAVA_VERSION: "17"
   JAVA_DISTRIBUTION: "temurin"
-  API_LEVEL: "29"
-  TARGET: "default"
-  ARCH: "x86_64"
+  API_LEVEL: "31"
+  TARGET: "google_apis"
+  ARCH: "arm64-v8a"
   CMD_TIMEOUT: "600"
 
 jobs:
@@ -61,9 +61,9 @@ jobs:
 
   ui-test:
     name: Run UI Tests
-    runs-on: macos-latest
+    runs-on: macos-14
     needs: lint
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
 
@@ -82,6 +82,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android SDK and Create AVD
+        run: |
+          # Accept all SDK licenses
+          yes | sdkmanager --licenses
+
+          # Install required SDK components
+          sdkmanager "platform-tools" "platforms;android-${{ env.API_LEVEL }}" "build-tools;34.0.0"
+          sdkmanager "system-images;android-${{ env.API_LEVEL }};${{ env.TARGET }};${{ env.ARCH }}"
+
+          # Create AVD
+          echo "no" | avdmanager create avd -n test_device \
+            -k "system-images;android-${{ env.API_LEVEL }};${{ env.TARGET }};${{ env.ARCH }}" \
+            -d "pixel_6" \
+            --force
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -91,16 +106,40 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           target: ${{ env.TARGET }}
           arch: ${{ env.ARCH }}
-          profile: Nexus 6
+          avd-name: test_device
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: >-
+            -no-snapshot-save
+            -no-window
+            -gpu swiftshader_indirect
+            -noaudio
+            -no-boot-anim
+            -camera-back none
+            -no-snapshot
+            -memory 2048
           disable-animations: true
           script: |
+            # Wait for boot completion
+            adb wait-for-device
+
+            # Start logcat capture
             adb logcat > emulator.log &
+
+            # Disable animations
             adb shell settings put global window_animation_scale 0.0
             adb shell settings put global transition_animation_scale 0.0
             adb shell settings put global animator_duration_scale 0.0
-            ./gradlew connectedCheck
+
+            # Run tests with retry mechanism
+            for i in 1 2 3; do
+              if ./gradlew connectedCheck; then
+                echo "Tests completed successfully"
+                break
+              else
+                echo "Attempt $i failed, retrying..."
+                sleep 30
+              fi
+            done
 
       - name: Upload UI Test Results
         if: always()

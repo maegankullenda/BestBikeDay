@@ -61,8 +61,8 @@ android {
         applicationId = "com.maegankullenda.bestbikeday"
         minSdk = 24
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments += mapOf(
@@ -115,27 +115,11 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField(
-                "String",
-                "OPENWEATHER_API_KEY",
-                getApiKey(
-                    "OPENWEATHER_API_KEY_DEBUG",
-                    "OPENWEATHER_API_KEY_DEBUG",
-                    "default_debug_key"
-                )
-            )
+            buildConfigField("String", "WEATHER_API_KEY", "\"7057ebb4ab85723ae3109867380ec71b\"")
             isMinifyEnabled = false
         }
         release {
-            buildConfigField(
-                "String",
-                "OPENWEATHER_API_KEY",
-                getApiKey(
-                    "OPENWEATHER_API_KEY_RELEASE",
-                    "OPENWEATHER_API_KEY_RELEASE",
-                    "default_release_key"
-                )
-            )
+            buildConfigField("String", "WEATHER_API_KEY", "\"7057ebb4ab85723ae3109867380ec71b\"")
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true

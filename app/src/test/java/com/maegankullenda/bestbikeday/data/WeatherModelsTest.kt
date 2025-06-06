@@ -6,32 +6,35 @@ import org.junit.Test
 class WeatherModelsTest {
 
     @Test
-    fun `test WeatherCity creation`() {
-        val city = WeatherCity(
+    fun `test City creation`() {
+        val coord = Coord(lat = -33.9249, lon = 18.4241)
+        val city = City(
             id = 1,
             name = "Cape Town",
+            coord = coord,
             country = "ZA",
-            coordinates = Coordinates(lat = -33.9249, lon = 18.4241),
             population = 3433441,
-            timezone = 7200
+            timezone = 7200,
+            sunrise = 1234567890L,
+            sunset = 1234599999L
         )
 
         assertEquals("Cape Town", city.name)
         assertEquals("ZA", city.country)
-        assertEquals(-33.9249, city.coordinates.lat, 0.0001)
-        assertEquals(18.4241, city.coordinates.lon, 0.0001)
+        assertEquals(-33.9249, city.coord.lat, 0.0001)
+        assertEquals(18.4241, city.coord.lon, 0.0001)
     }
 
     @Test
-    fun `test ForecastItem creation`() {
-        val mainWeather = MainWeather(
-            temperature = 25.0,
+    fun `test WeatherData creation`() {
+        val main = Main(
+            temp = 25.0,
             feelsLike = 26.0,
             tempMin = 20.0,
             tempMax = 30.0,
             pressure = 1013,
             seaLevel = 1013,
-            groundLevel = 1013,
+            grndLevel = 1013,
             humidity = 65,
             tempKf = 0.0
         )
@@ -45,61 +48,79 @@ class WeatherModelsTest {
 
         val wind = Wind(
             speed = 5.0,
-            degree = 180,
+            deg = 180,
             gust = 7.0
         )
 
-        val forecastItem = ForecastItem(
-            date = 1234567890L,
-            main = mainWeather,
+        val clouds = Clouds(all = 0)
+        val sys = Sys(pod = "d")
+
+        val weatherData = WeatherData(
+            dt = 1234567890L,
+            main = main,
             weather = listOf(weather),
-            clouds = mapOf("all" to 0),
+            clouds = clouds,
             wind = wind,
             visibility = 10000,
-            probabilityOfPrecipitation = 0.0,
-            dateText = "2024-03-20 12:00:00"
+            pop = 0.0,
+            sys = sys,
+            dtTxt = "2024-03-20 12:00:00"
         )
 
-        assertEquals(1234567890L, forecastItem.date)
-        assertEquals(25.0, forecastItem.main.temperature, 0.0001)
-        assertEquals("Clear", forecastItem.weather.first().main)
-        assertEquals(5.0, forecastItem.wind.speed, 0.0001)
+        assertEquals(1234567890L, weatherData.dt)
+        assertEquals(25.0, weatherData.main.temp, 0.0001)
+        assertEquals("Clear", weatherData.weather.first().main)
+        assertEquals(5.0, weatherData.wind.speed, 0.0001)
     }
 
     @Test
     fun `test WeatherResponse creation`() {
-        val city = WeatherCity(
+        val coord = Coord(lat = -33.9249, lon = 18.4241)
+        val city = City(
             id = 1,
             name = "Cape Town",
+            coord = coord,
             country = "ZA",
-            coordinates = Coordinates(lat = -33.9249, lon = 18.4241),
             population = 3433441,
-            timezone = 7200
+            timezone = 7200,
+            sunrise = 1234567890L,
+            sunset = 1234599999L
         )
 
-        val forecastItem = ForecastItem(
-            date = 1234567890L,
-            main = MainWeather(
-                temperature = 25.0,
+        val weatherData = WeatherData(
+            dt = 1234567890L,
+            main = Main(
+                temp = 25.0,
                 feelsLike = 26.0,
                 tempMin = 20.0,
                 tempMax = 30.0,
                 pressure = 1013,
                 seaLevel = 1013,
-                groundLevel = 1013,
+                grndLevel = 1013,
                 humidity = 65,
                 tempKf = 0.0
             ),
-            weather = listOf(Weather(800, "Clear", "clear sky", "01d")),
-            clouds = mapOf("all" to 0),
-            wind = Wind(5.0, 180, 7.0),
+            weather = listOf(
+                Weather(
+                    id = 800,
+                    main = "Clear",
+                    description = "clear sky",
+                    icon = "01d"
+                )
+            ),
+            clouds = Clouds(all = 0),
+            wind = Wind(speed = 5.0, deg = 180, gust = 7.0),
             visibility = 10000,
-            probabilityOfPrecipitation = 0.0,
-            dateText = "2024-03-20 12:00:00"
+            pop = 0.0,
+            sys = Sys(pod = "d"),
+            dtTxt = "2024-03-20 12:00:00"
         )
 
         val response = WeatherResponse(
-            list = listOf(forecastItem),
+            cod = "200",
+            message = 0,
+            cnt = 1,
+            list = listOf(weatherData),
             city = city
         )
 

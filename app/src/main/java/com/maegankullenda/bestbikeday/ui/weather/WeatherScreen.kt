@@ -2,14 +2,15 @@ package com.maegankullenda.bestbikeday.ui.weather
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -23,19 +24,23 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.maegankullenda.bestbikeday.data.City
-import com.maegankullenda.bestbikeday.data.ForecastItem
+import com.maegankullenda.bestbikeday.BuildConfig
+import com.maegankullenda.bestbikeday.R
+import com.maegankullenda.bestbikeday.data.SouthAfricanCity
+import com.maegankullenda.bestbikeday.data.WeatherForecast
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -45,10 +50,14 @@ import java.util.TimeZone
 private val SkyBlue = Color(0xFF87CEEB)
 private val LightPink = Color(0xFFFFE4E1) // Misty Rose color
 
+// Define gradient colors
+private val GradientStart = Color(0xFF1A237E) // Deep blue
+private val GradientEnd = Color(0xFF304FFE) // Bright blue
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeatherScreen(
-    city: City,
+    city: SouthAfricanCity,
     numberOfDays: Int,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -60,68 +69,89 @@ fun WeatherScreen(
         viewModel.loadWeatherForecast(
             lat = city.lat,
             lon = city.lon,
-            apiKey = "7057ebb4ab85723ae3109867380ec71b"
+            apiKey = BuildConfig.WEATHER_API_KEY
         )
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(LightPink),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Top Bar with back button
-        TopAppBar(
-            title = { Text("Weather Forecast") },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF1A237E), // Deep blue
+                        Color(0xFF304FFE)  // Bright blue
                     )
-                }
-            }
-        )
-
-        Text(
-            text = if (uiState.cityName.isNotEmpty()) {
-                "Weather Forecast for ${uiState.cityName}"
-            } else {
-                city.name
-            },
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(16.dp)
-        )
-
-        when {
-            uiState.isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.padding(16.dp)
                 )
-            }
-            uiState.error != null -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .testTag("error_message"),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TopAppBar(
+                title = {
                     Text(
-                        text = uiState.error!!,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
+                        "Weather Forecast",
+                        color = Color.White
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
+
+            Text(
+                text = if (uiState.cityName.isNotEmpty()) {
+                    "Weather Forecast for ${uiState.cityName}"
+                } else {
+                    city.name
+                },
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(16.dp),
+                        color = Color.White
                     )
                 }
-            }
-            else -> {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(uiState.forecasts.take(numberOfDays)) { forecast ->
-                        WeatherCard(forecast = forecast)
+                uiState.error != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = uiState.error!!,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(uiState.forecast) { forecast ->
+                            WeatherCard(forecast = forecast)
+                        }
                     }
                 }
             }
@@ -130,93 +160,85 @@ fun WeatherScreen(
 }
 
 @Composable
-fun WeatherCard(
-    forecast: ForecastItem,
-    modifier: Modifier = Modifier
-) {
+fun WeatherCard(forecast: WeatherForecast) {
+    val score = calculateBikingScore(
+        temperature = forecast.temperature,
+        windSpeed = forecast.windSpeed,
+        weatherMain = forecast.weatherMain
+    )
+    val color = getBikingConditionColor(score)
+
+    val dateFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
+    dateFormat.timeZone = TimeZone.getDefault()
+
     Card(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = SkyBlue,
-            contentColor = Color.Black // Text color
-        )
+            containerColor = Color.White.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Date and Weather
-            Column(
-                horizontalAlignment = Alignment.Start
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Use a more specific date format that includes the day of the week
-                val dateFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).apply {
-                    timeZone = TimeZone.getDefault()
-                }
                 Text(
                     text = dateFormat.format(Date(forecast.date * 1000)),
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Black
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                val description = forecast.weather.firstOrNull()?.description?.let { desc ->
-                    val firstChar = desc.first()
-                    val titlecaseChar = if (firstChar.isLowerCase()) {
-                        firstChar.titlecase(Locale.getDefault())
-                    } else {
-                        firstChar.toString()
-                    }
-                    titlecaseChar + desc.substring(1)
-                } ?: "Unknown"
-
                 Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.DarkGray
+                    text = "${score.toInt()}%",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = color
                 )
             }
 
-            // Temperature and Wind
-            Column(
-                horizontalAlignment = Alignment.End
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Text(
+                    text = "${forecast.temperature.toInt()}°C",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.Black
+                )
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_wind),
+                        contentDescription = "Wind speed",
+                        tint = Color.Black,
+                        modifier = Modifier.size(20.dp)
+                    )
                     Text(
-                        text = "${forecast.main.tempMax.toInt()}°",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "${forecast.windSpeed} km/h",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = Color.Black
                     )
-                    Text(
-                        text = "${forecast.main.tempMin.toInt()}°",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.DarkGray
-                    )
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Wind: ${forecast.wind.speed.toInt()} km/h",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.DarkGray
-                )
             }
-        }
-    }
-}
 
-private fun String.capitalize(): String {
-    return this.replaceFirstChar {
-        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+            Text(
+                text = forecast.weatherDescription.replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Black,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
     }
 }

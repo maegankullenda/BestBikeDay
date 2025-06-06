@@ -12,7 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.maegankullenda.bestbikeday.data.City
+import com.maegankullenda.bestbikeday.data.SouthAfricanCity
 import com.maegankullenda.bestbikeday.ui.settings.SettingsScreen
 import com.maegankullenda.bestbikeday.ui.theme.BestBikeDayTheme
 import com.maegankullenda.bestbikeday.ui.weather.WeatherScreen
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             BestBikeDayTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    var selectedCity by remember { mutableStateOf<City?>(null) }
+                    var selectedCity by remember { mutableStateOf<SouthAfricanCity?>(null) }
                     var selectedDays by remember { mutableStateOf(5) }
 
                     if (selectedCity == null) {

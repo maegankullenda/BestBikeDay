@@ -2,71 +2,75 @@ package com.maegankullenda.bestbikeday.ui.weather
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.maegankullenda.bestbikeday.data.ForecastItem
 import com.maegankullenda.bestbikeday.data.WeatherApi
-import com.maegankullenda.bestbikeday.data.WeatherApiClient
+import com.maegankullenda.bestbikeday.data.WeatherForecast
+import com.maegankullenda.bestbikeday.data.WeatherService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class WeatherUiState(
+data class WeatherState(
+    val forecast: List<WeatherForecast> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val cityName: String = "",
-    val forecasts: List<ForecastItem> = emptyList()
+    val cityName: String = ""
 )
 
 class WeatherViewModel(
-    private val weatherApi: WeatherApi = WeatherApiClient.weatherApi
+    private val weatherService: WeatherService = WeatherApi.service
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(WeatherUiState())
-    val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(WeatherState())
+    val uiState: StateFlow<WeatherState> = _uiState.asStateFlow()
 
     fun loadWeatherForecast(lat: Double, lon: Double, apiKey: String) {
-        _uiState.update { it.copy(isLoading = true, error = null) }
-
         viewModelScope.launch {
             try {
-                val response = weatherApi.getForecast(lat, lon, apiKey)
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val response = weatherService.getForecast(lat, lon, apiKey)
 
-                // Group forecasts by day and take the middle forecast for each day
+                // Group forecasts by day and get the middle of the day forecast (around noon)
                 val dailyForecasts = response.list
-                    .groupBy { forecast ->
-                        // Convert Unix timestamp to day start (midnight)
-                        val date = java.util.Date(forecast.date * 1000)
-                        val calendar = java.util.Calendar.getInstance()
-                        calendar.time = date
-                        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                        calendar.set(java.util.Calendar.MINUTE, 0)
-                        calendar.set(java.util.Calendar.SECOND, 0)
-                        calendar.set(java.util.Calendar.MILLISECOND, 0)
-                        calendar.timeInMillis
+                    .groupBy { item ->
+                        // Convert timestamp to date string (YYYY-MM-DD)
+                        java.time.Instant.ofEpochSecond(item.dt)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                            .toString()
                     }
-                    .map { (_, forecasts) ->
-                        // Take the forecast from the middle of the day (around noon)
-                        forecasts[forecasts.size / 2]
+                    .mapValues { (_, forecasts) ->
+                        // Find forecast closest to noon for each day
+                        forecasts.minByOrNull { forecast ->
+                            val hour = java.time.Instant.ofEpochSecond(forecast.dt)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .hour
+                            Math.abs(hour - 12)
+                        } ?: forecasts.first()
                     }
-                    .take(7) // Allow up to 7 days of forecast
+                    .values
+                    .take(5) // Take only the first 5 days
+                    .map { item ->
+                        WeatherForecast(
+                            date = item.dt,
+                            temperature = item.main.temp,
+                            windSpeed = item.wind.speed,
+                            weatherMain = item.weather.firstOrNull()?.main ?: "",
+                            weatherDescription = item.weather.firstOrNull()?.description ?: ""
+                        )
+                    }
+                    .toList()
 
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        cityName = response.city.name,
-                        forecasts = dailyForecasts,
-                        error = null
-                    )
-                }
+                _uiState.value = _uiState.value.copy(
+                    forecast = dailyForecasts,
+                    isLoading = false,
+                    error = null,
+                    cityName = response.city.name
+                )
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Unknown error occurred",
-                        cityName = "",
-                        forecasts = emptyList()
-                    )
-                }
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message
+                )
             }
         }
     }

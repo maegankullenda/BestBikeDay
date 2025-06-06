@@ -9,10 +9,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import com.maegankullenda.bestbikeday.data.City
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.maegankullenda.bestbikeday.data.Coordinates
 import com.maegankullenda.bestbikeday.data.ForecastItem
 import com.maegankullenda.bestbikeday.data.MainWeather
+import com.maegankullenda.bestbikeday.data.SouthAfricanCity
 import com.maegankullenda.bestbikeday.data.Weather
 import com.maegankullenda.bestbikeday.data.WeatherApi
 import com.maegankullenda.bestbikeday.data.WeatherCity
@@ -23,17 +24,19 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(AndroidJUnit4::class)
 class WeatherScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
@@ -42,7 +45,7 @@ class WeatherScreenTest {
     private lateinit var weatherApi: WeatherApi
     private lateinit var viewModelStoreOwner: androidx.lifecycle.ViewModelStoreOwner
 
-    private val mockCity = City(
+    private val mockCity = SouthAfricanCity(
         name = "Cape Town",
         lat = -33.9249,
         lon = 18.4241

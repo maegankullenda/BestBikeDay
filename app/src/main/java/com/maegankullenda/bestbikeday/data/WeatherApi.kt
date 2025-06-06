@@ -7,8 +7,8 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-interface WeatherApi {
-    @GET("forecast")
+interface WeatherService {
+    @GET("data/2.5/forecast")
     suspend fun getForecast(
         @Query("lat") lat: Double,
         @Query("lon") lon: Double,
@@ -17,18 +17,15 @@ interface WeatherApi {
     ): WeatherResponse
 }
 
-object WeatherApiClient {
-    private const val BASE_URL = "https://api.openweathermap.org/data/2.5/"
-
+object WeatherApi {
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
 
-    val weatherApi: WeatherApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(WeatherApi::class.java)
-    }
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://api.openweathermap.org/")
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .build()
+
+    val service: WeatherService = retrofit.create(WeatherService::class.java)
 }

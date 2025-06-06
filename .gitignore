@@ -16,3 +16,11 @@ local.properties
 secure.properties
 keystore.properties
 keystore.txt
+
+# API Keys
+/apikey.properties
+/app/src/main/assets/api_keys.properties
+/app/debug/
+/app/release/
+*.jks
+*.keystore

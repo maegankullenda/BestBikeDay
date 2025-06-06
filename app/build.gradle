@@ -24,10 +24,16 @@ android {
 
     signingConfigs {
         release {
+            def keystoreProperties = new Properties()
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+            }
+            
             storeFile file("../bestbikeday.keystore")
-            storePassword "maegank123"
-            keyAlias "bestbikeday"
-            keyPassword "maegank123"
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties['storePassword']
+            keyAlias System.getenv("KEY_ALIAS") ?: keystoreProperties['keyAlias']
+            keyPassword System.getenv("KEY_PASSWORD") ?: keystoreProperties['keyPassword']
         }
     }
 

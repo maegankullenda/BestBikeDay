@@ -153,20 +153,14 @@ jobs:
           echo "OPENWEATHER_API_KEY_DEBUG=${{ secrets.OPENWEATHER_API_KEY_DEBUG }}" > local.properties
           echo "OPENWEATHER_API_KEY_RELEASE=${{ secrets.OPENWEATHER_API_KEY_RELEASE }}" >> local.properties
 
-      - name: Decode Keystore
+      - name: Setup Keystore
         run: |
-          echo "${{ secrets.RELEASE_KEYSTORE }}" > keystore.asc
-          gpg -d --passphrase "${{ secrets.KEYSTORE_PASSPHRASE }}" --batch keystore.asc > app/release.keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > bestbikeday.keystore
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build Release Bundle
-        env:
-          KEYSTORE_FILE: release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew bundleRelease
 
       - name: Upload Release Bundle

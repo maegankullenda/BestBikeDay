@@ -93,18 +93,6 @@ jobs:
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
 
-      - name: Enable KVM group permissions
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      - name: Setup Gradle for caching
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: wrapper
-          cache-read-only: false
-
       - name: Create and configure AVD
         run: |
           # Create AVD with explicit paths
@@ -114,77 +102,45 @@ jobs:
             --package "system-images;android-31;google_apis;x86_64" \
             --device "pixel_6"
 
-          # Configure AVD settings
-          echo "hw.cpu.ncore=2" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.ramSize=4096" >> ~/.android/avd/test_device.avd/config.ini
+          # Configure AVD
           echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
-          echo "disk.dataPartition.size=6144M" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.keyboard=yes" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.lcd.height=2400" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.lcd.width=1080" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.ramSize=4096" >> ~/.android/avd/test_device.avd/config.ini
+          echo "disk.dataPartition.size=6G" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.cpu.ncore=2" >> ~/.android/avd/test_device.avd/config.ini
 
-          # Performance optimizations
-          echo "hw.gpu.enabled=yes" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.gpu.mode=swiftshader_indirect" >> ~/.android/avd/test_device.avd/config.ini
-
-      - name: Start emulator and wait for boot
+      - name: Start Android Emulator
         run: |
-          # Start emulator with optimized settings
+          # Start emulator in background
           $ANDROID_SDK_ROOT/emulator/emulator \
             -avd test_device \
-            -no-audio \
-            -no-boot-anim \
             -no-window \
             -gpu swiftshader_indirect \
             -no-snapshot \
-            -no-snapshot-save \
+            -no-audio \
+            -no-boot-anim \
+            -camera-back none \
             -memory 4096 \
             -cores 2 \
-            -accel on \
             -netfast \
-            -partition-size 4096 &
+            &
 
-          # More robust boot completion check
-          echo "Waiting for emulator to start..."
-          adb wait-for-device
+          # Wait for emulator to start
+          $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
 
-          # Check boot complete
-          timeout=600
-          start_time=$(date +%s)
-          while true; do
-            if adb shell getprop sys.boot_completed 2>/dev/null | grep -q "1"; then
-              echo "Emulator is ready"
-              break
-            fi
-            
-            current_time=$(date +%s)
-            elapsed=$((current_time - start_time))
-            
-            if [ $elapsed -gt $timeout ]; then
-              echo "Timeout waiting for emulator to start"
-              exit 1
-            fi
-            
-            echo "Waiting for emulator... ($elapsed seconds)"
-            sleep 5
-          done
+          # Additional boot verification
+          sleep 30
+          $ANDROID_SDK_ROOT/platform-tools/adb devices -l
+          $ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed
 
-      - name: Run tests
+      - name: Run Instrumentation Tests
         run: |
-          # Ensure ADB server is running
-          adb start-server
-
-          # Run tests with retries and better error handling
+          # Run tests with retry mechanism
           max_retries=3
           for ((i=1; i<=max_retries; i++)); do
             echo "Test attempt $i of $max_retries"
-            
-            # Check device state before running tests
-            adb devices -l
-            adb shell getprop sys.boot_completed
-            
-            if ./gradlew connectedCheck --debug --stacktrace --info \
-              -Dorg.gradle.jvmargs="-Xmx4g -XX:+HeapDumpOnOutOfMemoryError" \
-              -Dorg.gradle.caching=true \
-              -Dorg.gradle.parallel=true; then
+            if ./gradlew connectedCheck --info; then
               echo "Tests completed successfully"
               break
             else
@@ -196,16 +152,11 @@ jobs:
             fi
           done
 
-      - name: Cleanup
+      - name: Stop Android Emulator
         if: always()
         run: |
-          # Ensure emulator is properly terminated
           adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
-          sleep 2
-
-          # Kill any remaining emulator processes
-          pkill -9 qemu-system-x86_64 || true
-          pkill -9 emulator64-x86 || true
+          sleep 5
 
       - name: Upload UI Test Results
         if: always()

@@ -65,7 +65,7 @@ jobs:
     needs: lint
     timeout-minutes: 60
     env:
-      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 60
+      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
     steps:
       - uses: actions/checkout@v3
 
@@ -86,7 +86,7 @@ jobs:
 
       - name: Install Android SDK Components
         run: |
-          echo "y" | sdkmanager --install \
+          sdkmanager --install \
             "build-tools;34.0.0" \
             "platform-tools" \
             "platforms;android-31" \
@@ -101,11 +101,19 @@ jobs:
             --package "system-images;android-31;google_apis;x86_64" \
             --device "pixel_6"
 
-          echo "hw.cpu.ncore=2" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.cpu.ncore=1" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.ramSize=2048" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
           echo "disk.dataPartition.size=2048M" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.keyboard=yes" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.gpu.enabled=yes" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.gpu.mode=swiftshader_indirect" >> ~/.android/avd/test_device.avd/config.ini
+
+      - name: Kill existing adb processes
+        run: |
+          adb kill-server || true
+          sleep 5
+          adb start-server
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -118,9 +126,9 @@ jobs:
           arch: ${{ env.ARCH }}
           avd-name: test_device
           force-avd-creation: false
-          cores: 2
-          ram-size: 2048M
-          emulator-boot-timeout: 600
+          emulator-boot-timeout: 1200
+          disable-animations: true
+          disable-spellchecker: true
           emulator-options: >-
             -no-snapshot-save
             -no-window
@@ -130,41 +138,63 @@ jobs:
             -camera-back none
             -no-snapshot
             -memory 2048
-          disable-animations: true
-          disable-spellchecker: true
+            -no-accel
+            -cores 1
           script: |
+            # Kill and restart ADB to ensure clean state
+            adb kill-server || true
+            sleep 5
+            adb start-server
+
             # Wait for emulator to start
             adb wait-for-device
-            adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 3; done'
 
-            # Verify boot completed
-            bootanim=""
-            failCounter=0
-            until [[ "$bootanim" =~ "stopped" ]] || [[ $failCounter -gt 10 ]]; do
-              bootanim=$(adb -e shell getprop init.svc.bootanim 2>&1 &)
-              echo "Waiting for boot animation to complete... (attempt $failCounter)"
+            # More robust boot completion check
+            timeout=1200
+            start_time=$(date +%s)
+
+            until [[ "$(adb shell getprop sys.boot_completed 2>&1)" == "1" ]]; do
+              current_time=$(date +%s)
+              elapsed=$((current_time - start_time))
+              
+              if [[ $elapsed -ge $timeout ]]; then
+                echo "Timeout waiting for boot completion"
+                exit 1
+              fi
+              
+              echo "Waiting for boot completion... (${elapsed}s)"
               sleep 10
-              ((failCounter++))
             done
 
-            # Start logcat capture
-            adb logcat > emulator.log &
+            # Ensure ADB is responsive
+            adb devices
 
             # Disable animations
             adb shell settings put global window_animation_scale 0.0
             adb shell settings put global transition_animation_scale 0.0
             adb shell settings put global animator_duration_scale 0.0
 
+            # Start logcat capture
+            adb logcat > emulator.log &
+
             # Run tests with retry mechanism
-            for i in 1 2 3; do
+            max_retries=3
+            for ((i=1; i<=max_retries; i++)); do
+              echo "Test attempt $i of $max_retries"
               if ./gradlew connectedCheck; then
                 echo "Tests completed successfully"
-                break
+                exit 0
               else
-                echo "Attempt $i failed, retrying..."
-                sleep 30
+                echo "Attempt $i failed"
+                if [[ $i -lt $max_retries ]]; then
+                  echo "Waiting before retry..."
+                  sleep 30
+                fi
               fi
             done
+
+            echo "All test attempts failed"
+            exit 1
 
       - name: Upload UI Test Results
         if: always()

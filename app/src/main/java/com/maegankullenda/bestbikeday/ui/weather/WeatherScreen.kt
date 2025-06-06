@@ -80,7 +80,7 @@ fun WeatherScreen(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         Color(0xFF1A237E), // Deep blue
-                        Color(0xFF304FFE)  // Bright blue
+                        Color(0xFF304FFE) // Bright blue
                     )
                 )
             )

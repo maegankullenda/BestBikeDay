@@ -93,6 +93,9 @@ jobs:
             "emulator" \
             "system-images;android-31;google_apis;x86_64"
 
+      - name: Accept Android SDK Licenses
+        run: yes | sdkmanager --licenses || true
+
       - name: Create AVD and modify config
         run: |
           echo "no" | avdmanager create avd \
@@ -108,12 +111,17 @@ jobs:
           echo "hw.keyboard=yes" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.gpu.enabled=yes" >> ~/.android/avd/test_device.avd/config.ini
           echo "hw.gpu.mode=swiftshader_indirect" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.audioInput=no" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.audioOutput=no" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.camera.back=none" >> ~/.android/avd/test_device.avd/config.ini
+          echo "hw.camera.front=none" >> ~/.android/avd/test_device.avd/config.ini
 
-      - name: Kill existing adb processes
+      - name: Configure ADB
         run: |
           adb kill-server || true
           sleep 5
           adb start-server
+          adb devices
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -140,20 +148,22 @@ jobs:
             -memory 2048
             -no-accel
             -cores 1
+            -no-audio
+            -no-vulkan
           script: |
             # Kill and restart ADB to ensure clean state
             adb kill-server || true
             sleep 5
             adb start-server
 
-            # Wait for emulator to start
+            # Wait for emulator to start with increased timeout
             adb wait-for-device
 
-            # More robust boot completion check
+            # More robust boot completion check with longer timeout
             timeout=1200
             start_time=$(date +%s)
 
-            until [[ "$(adb shell getprop sys.boot_completed 2>&1)" == "1" ]]; do
+            until [[ "$(adb shell getprop sys.boot_completed 2>&1)" == "1" ]] || [[ "$(adb shell getprop dev.bootcomplete 2>&1)" == "1" ]]; do
               current_time=$(date +%s)
               elapsed=$((current_time - start_time))
               
@@ -163,11 +173,13 @@ jobs:
               fi
               
               echo "Waiting for boot completion... (${elapsed}s)"
+              adb devices
               sleep 10
             done
 
-            # Ensure ADB is responsive
-            adb devices
+            # Additional boot verification
+            adb shell input keyevent 82
+            sleep 5
 
             # Disable animations
             adb shell settings put global window_animation_scale 0.0
@@ -181,13 +193,14 @@ jobs:
             max_retries=3
             for ((i=1; i<=max_retries; i++)); do
               echo "Test attempt $i of $max_retries"
-              if ./gradlew connectedCheck; then
+              if ./gradlew connectedCheck --debug; then
                 echo "Tests completed successfully"
                 exit 0
               else
                 echo "Attempt $i failed"
                 if [[ $i -lt $max_retries ]]; then
                   echo "Waiting before retry..."
+                  adb devices
                   sleep 30
                 fi
               fi

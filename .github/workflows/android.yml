@@ -220,7 +220,14 @@ jobs:
 
       - name: Setup Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > bestbikeday.keystore
+          # Decode and save keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > bestbikeday.keystore
+
+          # Create keystore.properties
+          echo "storeFile=bestbikeday.keystore" > keystore.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew

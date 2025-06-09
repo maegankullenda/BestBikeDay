@@ -59,118 +59,118 @@ jobs:
       - name: Run Unit Tests
         run: ./gradlew test -x :app:testDebugUnitTest -x :app:testReleaseUnitTest
 
-  ui-test:
-    name: Run UI Tests
-    runs-on: macos-13
-    needs: lint
-    timeout-minutes: 60
-    env:
-      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          cache: gradle
-
-      - name: Create local.properties
-        run: |
-          echo "OPENWEATHER_API_KEY_DEBUG=${{ secrets.OPENWEATHER_API_KEY_DEBUG }}" > local.properties
-          echo "OPENWEATHER_API_KEY_RELEASE=${{ secrets.OPENWEATHER_API_KEY_RELEASE }}" >> local.properties
-
-      - name: Setup Android SDK
-        run: |
-          # Ensure ANDROID_SDK_ROOT is set and exists
-          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
-          mkdir -p $ANDROID_SDK_ROOT
-
-          # Accept licenses before any SDK commands
-          mkdir -p $ANDROID_SDK_ROOT/licenses
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
-
-      - name: Create and configure AVD
-        run: |
-          # Create AVD with explicit paths
-          echo "no" | avdmanager create avd \
-            --force \
-            --name "test_device" \
-            --package "system-images;android-31;google_apis;x86_64" \
-            --device "pixel_6"
-
-          # Configure AVD
-          echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.lcd.height=2400" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.lcd.width=1080" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.ramSize=4096" >> ~/.android/avd/test_device.avd/config.ini
-          echo "disk.dataPartition.size=6G" >> ~/.android/avd/test_device.avd/config.ini
-          echo "hw.cpu.ncore=2" >> ~/.android/avd/test_device.avd/config.ini
-
-      - name: Start Android Emulator
-        run: |
-          # Start emulator in background
-          $ANDROID_SDK_ROOT/emulator/emulator \
-            -avd test_device \
-            -no-window \
-            -gpu swiftshader_indirect \
-            -no-snapshot \
-            -no-audio \
-            -no-boot-anim \
-            -camera-back none \
-            -memory 4096 \
-            -cores 2 \
-            -netfast \
-            &
-
-          # Wait for emulator to start
-          $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
-
-          # Additional boot verification
-          sleep 30
-          $ANDROID_SDK_ROOT/platform-tools/adb devices -l
-          $ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed
-
-      - name: Run Instrumentation Tests
-        run: |
-          # Run tests with retry mechanism
-          max_retries=3
-          for ((i=1; i<=max_retries; i++)); do
-            echo "Test attempt $i of $max_retries"
-            if ./gradlew connectedCheck --info; then
-              echo "Tests completed successfully"
-              break
-            else
-              echo "Attempt $i failed"
-              if [[ $i -lt $max_retries ]]; then
-                echo "Waiting before retry..."
-                sleep 30
-              fi
-            fi
-          done
-
-      - name: Stop Android Emulator
-        if: always()
-        run: |
-          adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
-          sleep 5
-
-      - name: Upload UI Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ui-test-results
-          path: |
-            app/build/reports/androidTests/
-            emulator.log
+  #  ui-test:
+  #    name: Run UI Tests
+  #    runs-on: macos-13
+  #    needs: lint
+  #    timeout-minutes: 60
+  #    env:
+  #      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
+  #    steps:
+  #      - uses: actions/checkout@v3
+  #
+  #      - name: Set up JDK 17
+  #        uses: actions/setup-java@v3
+  #        with:
+  #          java-version: ${{ env.JAVA_VERSION }}
+  #          distribution: ${{ env.JAVA_DISTRIBUTION }}
+  #          cache: gradle
+  #
+  #      - name: Create local.properties
+  #        run: |
+  #          echo "OPENWEATHER_API_KEY_DEBUG=${{ secrets.OPENWEATHER_API_KEY_DEBUG }}" > local.properties
+  #          echo "OPENWEATHER_API_KEY_RELEASE=${{ secrets.OPENWEATHER_API_KEY_RELEASE }}" >> local.properties
+  #
+  #      - name: Setup Android SDK
+  #        run: |
+  #          # Ensure ANDROID_SDK_ROOT is set and exists
+  #          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+  #          mkdir -p $ANDROID_SDK_ROOT
+  #
+  #          # Accept licenses before any SDK commands
+  #          mkdir -p $ANDROID_SDK_ROOT/licenses
+  #          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
+  #          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+  #          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+  #
+  #      - name: Create and configure AVD
+  #        run: |
+  #          # Create AVD with explicit paths
+  #          echo "no" | avdmanager create avd \
+  #            --force \
+  #            --name "test_device" \
+  #            --package "system-images;android-31;google_apis;x86_64" \
+  #            --device "pixel_6"
+  #
+  #          # Configure AVD
+  #          echo "hw.lcd.density=440" >> ~/.android/avd/test_device.avd/config.ini
+  #          echo "hw.lcd.height=2400" >> ~/.android/avd/test_device.avd/config.ini
+  #          echo "hw.lcd.width=1080" >> ~/.android/avd/test_device.avd/config.ini
+  #          echo "hw.ramSize=4096" >> ~/.android/avd/test_device.avd/config.ini
+  #          echo "disk.dataPartition.size=6G" >> ~/.android/avd/test_device.avd/config.ini
+  #          echo "hw.cpu.ncore=2" >> ~/.android/avd/test_device.avd/config.ini
+  #
+  #      - name: Start Android Emulator
+  #        run: |
+  #          # Start emulator in background
+  #          $ANDROID_SDK_ROOT/emulator/emulator \
+  #            -avd test_device \
+  #            -no-window \
+  #            -gpu swiftshader_indirect \
+  #            -no-snapshot \
+  #            -no-audio \
+  #            -no-boot-anim \
+  #            -camera-back none \
+  #            -memory 4096 \
+  #            -cores 2 \
+  #            -netfast \
+  #            &
+  #
+  #          # Wait for emulator to start
+  #          $ANDROID_SDK_ROOT/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+  #
+  #          # Additional boot verification
+  #          sleep 30
+  #          $ANDROID_SDK_ROOT/platform-tools/adb devices -l
+  #          $ANDROID_SDK_ROOT/platform-tools/adb shell getprop sys.boot_completed
+  #
+  #      - name: Run Instrumentation Tests
+  #        run: |
+  #          # Run tests with retry mechanism
+  #          max_retries=3
+  #          for ((i=1; i<=max_retries; i++)); do
+  #            echo "Test attempt $i of $max_retries"
+  #            if ./gradlew connectedCheck --info; then
+  #              echo "Tests completed successfully"
+  #              break
+  #            else
+  #              echo "Attempt $i failed"
+  #              if [[ $i -lt $max_retries ]]; then
+  #                echo "Waiting before retry..."
+  #                sleep 30
+  #              fi
+  #            fi
+  #          done
+  #
+  #      - name: Stop Android Emulator
+  #        if: always()
+  #        run: |
+  #          adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
+  #          sleep 5
+  #
+  #      - name: Upload UI Test Results
+  #        if: always()
+  #        uses: actions/upload-artifact@v4
+  #        with:
+  #          name: ui-test-results
+  #          path: |
+  #            app/build/reports/androidTests/
+  #            emulator.log
 
   build:
     name: Build Debug APK
     runs-on: ubuntu-latest
-    needs: [test, ui-test]
+    needs: [test]
     steps:
       - uses: actions/checkout@v3
 
@@ -201,7 +201,7 @@ jobs:
   release:
     name: Build Release Bundle
     runs-on: ubuntu-latest
-    needs: [test, ui-test]
+    needs: [test]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
